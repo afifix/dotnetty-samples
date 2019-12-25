@@ -1,5 +1,6 @@
 ﻿using DotNetty.Buffers;
 using DotNetty.Codecs;
+using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
@@ -11,7 +12,14 @@ namespace Netty.Examples.Common
 {
   public class PacketDecoder : ByteToMessageDecoder
   {
-    protected override void Decode(IChannelHandlerContext context, IByteBuffer input, List<object> output)
+    private static readonly IInternalLogger Logger;
+
+    static PacketDecoder()
+    {
+      Logger = InternalLoggerFactory.GetInstance<PacketDecoder>();
+    }
+
+    protected override void Decode(IChannelHandlerContext ctx, IByteBuffer input, List<object> output)
     {
       if (input.ReadableBytes < 5)
       {
@@ -43,9 +51,16 @@ namespace Netty.Examples.Common
       using (var reader = new BsonDataReader(ms))
       {
         // deserialize data
-        var serializer = new JsonSerializer();
-        var response = serializer.Deserialize<Packet>(reader);
+        var serializer = JsonSerializer.Create(new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
+        var response = serializer.Deserialize(reader);
         output.Add(response);
+        if (response is Packet packet)
+        {
+          Logger.Trace($"[{ctx.Channel.Id}] packet decoded: {packet.Type}");
+          return;
+        }
+
+        Logger.Warn($"[{ctx.Channel.Id}] decoded: ???");
       }
     }
   }

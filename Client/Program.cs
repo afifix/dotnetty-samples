@@ -25,7 +25,7 @@ namespace Netty.Examples.Client
       Helper.SetConsoleLogger();
 
       var group = new MultithreadEventLoopGroup();
-
+      var logger = new LoggingHandler("CLI", LogLevel.TRACE);
       try
       {
         var bootstrap = new Bootstrap();
@@ -33,16 +33,20 @@ namespace Netty.Examples.Client
           .Group(group)
           .Channel<TcpSocketChannel>()
           .Option(ChannelOption.TcpNodelay, true)
+          //.Handler(new LoggingHandler("CLI-LSTN"))
           .Handler(new ActionChannelInitializer<ISocketChannel>(channel =>
           {
             var pipeline = channel.Pipeline;
 
-            pipeline.AddLast(new LoggingHandler("CLI", LogLevel.TRACE));
+            //pipeline.AddLast(new LoggingHandler("CLI", LogLevel.TRACE));
             pipeline.AddLast("encoder", new PacketEncoder());
             pipeline.AddLast("decoder", new PacketDecoder());
+            pipeline.AddLast("keep-alive", new KeepMeAliveChannel());
             pipeline.AddLast("idle", new ReadIdleStateHandler(2, 9999));
             pipeline.AddLast("client", new ClientChannelHandler());
-            pipeline.AddLast("timeout", new TimeoutConnectionHandler());
+            pipeline.AddLast("ping", new PingProcessor());
+            pipeline.AddLast("pong", new PongProcessor());
+            pipeline.AddLast("timeout", new TimeoutHandler());
           }));
 
         var clientChannel = await bootstrap.ConnectAsync(new IPEndPoint(Host, Port));

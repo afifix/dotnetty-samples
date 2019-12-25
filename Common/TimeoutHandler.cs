@@ -4,13 +4,15 @@ using DotNetty.Transport.Channels;
 
 namespace Netty.Examples.Common
 {
-  public class TimeoutConnectionHandler : ChannelHandlerAdapter
+  public class TimeoutHandler : ChannelHandlerAdapter
   {
+    private const string Tag = "TIMEOUT";
+
     private static readonly IInternalLogger Logger;
 
-    static TimeoutConnectionHandler()
+    static TimeoutHandler()
     {
-      Logger = InternalLoggerFactory.GetInstance<TimeoutConnectionHandler>();
+      Logger = InternalLoggerFactory.GetInstance<TimeoutHandler>();
     }
 
     public override void UserEventTriggered(IChannelHandlerContext context, object evt)
@@ -18,7 +20,7 @@ namespace Netty.Examples.Common
       if (evt is ReadIdleStateEvent idleStateEvent)
       {
         var channel = context.Channel;
-        Logger.Warn($"[{channel.Id}] READ TIMEOUT {idleStateEvent.Retries} | EXCEEDED: {idleStateEvent.MaxRetriesExceeded}");
+        Logger.Warn($"[{Tag} - {channel.Id}] READ TIMEOUT {idleStateEvent.Retries} | EXCEEDED: {idleStateEvent.MaxRetriesExceeded}");
         if (idleStateEvent.MaxRetriesExceeded)
         {
           context.FireExceptionCaught(ReadTimeoutException.Instance);

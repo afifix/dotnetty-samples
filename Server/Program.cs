@@ -1,6 +1,4 @@
-﻿using DotNetty.Handlers.Logging;
-using DotNetty.Handlers.Timeout;
-using DotNetty.Transport.Bootstrapping;
+﻿using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
 using Netty.Examples.Common;
@@ -32,12 +30,13 @@ namespace Netty.Examples.Server
                   .ChildHandler(new ActionChannelInitializer<IChannel>(channel =>
                   {
                       channel.Pipeline
-                          .AddLast(new LoggingHandler("SRV", LogLevel.TRACE))
+                          //.AddLast(new LoggingHandler("SRV"))
                           .AddLast("encoder", new PacketEncoder())
                           .AddLast("decoder", new PacketDecoder())
                           .AddLast("idle", new ReadIdleStateHandler(5, 9999))
-                          .AddLast("server", new ServerChannelHandler())
-                          .AddLast("timeout", new TimeoutConnectionHandler());
+                          .AddLast("ping", new PingProcessor())
+                          //.AddLast("pong", new PongProcessor())
+                          .AddLast("timeout", new TimeoutHandler());
                   }));
 
                 var boundChannel = await bootstrap.BindAsync(port);

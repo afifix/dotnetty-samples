@@ -13,7 +13,7 @@ namespace Netty.Examples.Server
         {
             const int port = 8007;
 
-            Helper.SetConsoleLogger();
+            Helper.ConfigureLogger();
 
             var bossGroup = new MultithreadEventLoopGroup(1);
             var workerGroup = new MultithreadEventLoopGroup();
@@ -33,7 +33,7 @@ namespace Netty.Examples.Server
                           //.AddLast(new LoggingHandler("SRV"))
                           .AddLast("encoder", new PacketEncoder())
                           .AddLast("decoder", new PacketDecoder())
-                          .AddLast("idle", new ReadIdleStateHandler(5, 9999))
+                          .AddLast("idle", new ReadIdleStateHandler(20, 3))
                           .AddLast("ping", new PingProcessor())
                           //.AddLast("pong", new PongProcessor())
                           .AddLast("timeout", new TimeoutHandler());

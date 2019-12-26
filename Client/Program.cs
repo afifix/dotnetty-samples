@@ -22,7 +22,7 @@ namespace Netty.Examples.Client
 
     private static async Task RunClientAsync()
     {
-      Helper.SetConsoleLogger();
+      Helper.ConfigureLogger();
 
       var group = new MultithreadEventLoopGroup();
       var logger = new LoggingHandler("CLI", LogLevel.TRACE);
@@ -42,7 +42,7 @@ namespace Netty.Examples.Client
             pipeline.AddLast("encoder", new PacketEncoder());
             pipeline.AddLast("decoder", new PacketDecoder());
             pipeline.AddLast("keep-alive", new KeepMeAliveChannel());
-            pipeline.AddLast("idle", new ReadIdleStateHandler(2, 9999));
+            pipeline.AddLast("idle", new ReadIdleStateHandler(10, 3));
             pipeline.AddLast("client", new ClientChannelHandler());
             pipeline.AddLast("ping", new PingProcessor());
             pipeline.AddLast("pong", new PongProcessor());

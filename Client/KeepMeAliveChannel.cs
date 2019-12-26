@@ -4,6 +4,7 @@ using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
 using Netty.Examples.Common;
 using System;
+using System.Threading.Tasks;
 
 namespace Netty.Examples.Client
 {
@@ -21,9 +22,13 @@ namespace Netty.Examples.Client
       KeepAliveAction = WrapHandler(KeepAliveAsync);
     }
 
-    public KeepMeAliveChannel()
+    /// <summary>
+    /// constructor
+    /// </summary>
+    /// <param name="interval">interval in seconds between ping requests</param>
+    public KeepMeAliveChannel(int interval)
     {
-      KeepAliveInterval = TimeSpan.FromSeconds(4);
+      KeepAliveInterval = TimeSpan.FromSeconds(interval);
       Reading = false;
     }
 
@@ -104,6 +109,16 @@ namespace Netty.Examples.Client
         LastTimeRead = Ticks();
       }
       base.ChannelReadComplete(ctx);
+    }
+
+    public override Task WriteAsync(IChannelHandlerContext ctx, object message)
+    {
+      if (message is Ping request)
+      {
+        Logger.Trace($"[{ctx.Channel.Id}] write ping request {request.Id}");
+      }
+
+      return base.WriteAsync(ctx, message);
     }
 
     internal virtual TimeSpan Ticks() => TimeUtil.GetSystemTime();

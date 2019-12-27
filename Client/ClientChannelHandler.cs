@@ -15,6 +15,16 @@ namespace Netty.Examples.Client
       Logger = InternalLoggerFactory.GetInstance<ClientChannelHandler>();
     }
 
+    public override void ChannelRead(IChannelHandlerContext ctx, object msg)
+    {
+      if (AcceptInboundMessage(msg))
+      {
+        var imsg = (Packet)msg;
+        ChannelRead0(ctx, imsg);
+      }
+      ctx.FireChannelRead(msg);
+    }
+
     protected override void ChannelRead0(IChannelHandlerContext ctx, Packet packet)
     {
       Logger.Info($"[{ctx.Channel.Id}] channel read0 {packet.Type}");

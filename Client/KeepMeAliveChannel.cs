@@ -4,7 +4,6 @@ using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
 using Netty.Examples.Common;
 using System;
-using System.Threading.Tasks;
 
 namespace Netty.Examples.Client
 {
@@ -111,16 +110,6 @@ namespace Netty.Examples.Client
       base.ChannelReadComplete(ctx);
     }
 
-    public override Task WriteAsync(IChannelHandlerContext ctx, object message)
-    {
-      if (message is Ping request)
-      {
-        Logger.Trace($"[{ctx.Channel.Id}] write ping request {request.Id}");
-      }
-
-      return base.WriteAsync(ctx, message);
-    }
-
     internal virtual TimeSpan Ticks() => TimeUtil.GetSystemTime();
 
     private void Initialize(IChannelHandlerContext ctx)
@@ -159,7 +148,7 @@ namespace Netty.Examples.Client
       };
     }
 
-    private static async void KeepAliveAsync(KeepMeAliveChannel self, IChannelHandlerContext context)
+    private static async void KeepAliveAsync(KeepMeAliveChannel self, IChannelHandlerContext ctx)
     {
       // calculate next delay
       var nextDelay = self.KeepAliveInterval;
@@ -171,12 +160,12 @@ namespace Netty.Examples.Client
       // send a PINGREQ only if channel is not active
       if (!self.Reading && nextDelay.Ticks <= 0)
       {
-        await context.WriteAndFlushAsync(Ping.New());
+        await ctx.WriteAndFlushAsync(Ping.New());
         // reset delay
         nextDelay = self.KeepAliveInterval;
       }
 
-      self.KeepAliveScheduledTask = Schedule(context, KeepAliveAction, self, context, nextDelay);
+      self.KeepAliveScheduledTask = Schedule(ctx, KeepAliveAction, self, ctx, nextDelay);
     }
   }
 }

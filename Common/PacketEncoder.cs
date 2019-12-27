@@ -32,7 +32,7 @@ namespace Netty.Examples.Common
         serializer.Serialize(bsonWriter, packet);
         var data = ms.ToArray();
 
-        var buffer = ctx.Allocator.Buffer();      // allocate buffer
+        var buffer = ctx.Allocator.Buffer(); // allocate buffer
         buffer.WriteByte((byte)Convert.ToChar(0x02)); // write magic number
         buffer.WriteInt(data.Length);                 // write data length
         buffer.WriteBytes(data);                      // write data

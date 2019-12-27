@@ -26,16 +26,14 @@ namespace Netty.Examples.Server
 
                 bootstrap
                   .Option(ChannelOption.SoBacklog, 100)
-                  //.Handler(new LoggingHandler("SRV-LSTN"))
                   .ChildHandler(new ActionChannelInitializer<IChannel>(channel =>
                   {
                       channel.Pipeline
-                          //.AddLast(new LoggingHandler("SRV"))
                           .AddLast("encoder", new PacketEncoder())
                           .AddLast("decoder", new PacketDecoder())
                           .AddLast("idle", new ReadIdleStateHandler(20, 3))
                           .AddLast("ping", new PingProcessor())
-                          //.AddLast("pong", new PongProcessor())
+                          .AddLast("", new ServerChannelHandler())
                           .AddLast("timeout", new TimeoutHandler());
                   }));
 

@@ -22,9 +22,7 @@ namespace Netty.Examples.Common
     protected override void Decode(IChannelHandlerContext ctx, IByteBuffer input, List<object> output)
     {
       if (input.ReadableBytes < 5)
-      {
         return;
-      }
 
       input.MarkReaderIndex();
 

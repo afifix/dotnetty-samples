@@ -257,7 +257,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helper.cs" />
-    <Compile Include="ISession.cs" />
     <Compile Include="Ping.cs" />
     <Compile Include="PingProcessor.cs" />
     <Compile Include="Pong.cs" />

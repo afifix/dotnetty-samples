@@ -47,10 +47,14 @@ namespace Netty.Examples.Client
       var services = new ServiceCollection();
       services.AddSingleton(loggerFactory);
       services.AddScoped<DefaultSessionOptionProvider>();
-      services.AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>());
       services.AddScoped<Client>();
       services.AddScoped<ISession>(sp => sp.GetRequiredService<Client>());
-      //services.AddScoped<PongProcessor>();
+      services.AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>());
+      services.AddTransient<ChannelClient>();
+      services.AddScoped<Func<IChannelClient>>(sp => sp.GetRequiredService<ChannelClient>);
+      services.AddScoped<ChannelClientFactory>();
+      services.AddScoped<IChannelClientFactory>(sp => sp.GetRequiredService<ChannelClientFactory>());
+
       return services.BuildServiceProvider();
     }
 

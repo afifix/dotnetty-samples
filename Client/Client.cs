@@ -1,7 +1,4 @@
-﻿using DotNetty.Transport.Bootstrapping;
-using DotNetty.Transport.Channels;
-using DotNetty.Transport.Channels.Sockets;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Netty.Examples.Common;
 using System;
 using System.Threading;
@@ -11,18 +8,17 @@ namespace Netty.Examples.Client
 {
   public class Client : ISession
   {
-    private readonly SessionOption _option;
     private readonly ILogger<Client> _logger;
+    private readonly IChannelClientFactory _channelFactory;
 
-    private MultithreadEventLoopGroup _workerGroup;
-    private IChannel _channel;
-    private readonly IServiceProvider _sericeProvider;
+    private IChannelClient _channel;
 
-    public Client(ILoggerFactory loggerFactory, ISessionOptionProvider sessionOptionProvider, IServiceProvider serviceProvider)
+    public Client(
+      ILoggerFactory loggerFactory,
+      IChannelClientFactory channelFactory)
     {
       _logger = loggerFactory?.CreateLogger<Client>() ?? throw new ArgumentNullException(nameof(loggerFactory));
-      _option = sessionOptionProvider?.Get() ?? throw new ArgumentNullException(nameof(sessionOptionProvider));
-      _sericeProvider = serviceProvider;
+      _channelFactory = channelFactory ?? throw new ArgumentNullException(nameof(channelFactory));
     }
 
     public event EventHandler Connected;
@@ -30,6 +26,14 @@ namespace Netty.Examples.Client
     public event EventHandler Closed;
 
     public event EventHandler<Pong> Ponged;
+
+    public event EventHandler<ReadIdleStateEvent> Timedout;
+
+    public void OnTimedout(ReadIdleStateEvent ev)
+    {
+      _logger.LogTrace("raise `Timedout` event");
+      ThreadPool.QueueUserWorkItem(s => { Timedout?.Invoke(this, ev); });
+    }
 
     public void OnConnected()
     {
@@ -51,33 +55,22 @@ namespace Netty.Examples.Client
 
     public async Task RunAsync()
     {
-      _workerGroup = new MultithreadEventLoopGroup();
-      var bootstrap = new Bootstrap();
-      bootstrap
-        .Group(_workerGroup)
-        .Channel<TcpSocketChannel>()
-        .Option(ChannelOption.TcpNodelay, true)
-        .Handler(new ActionChannelInitializer<ISocketChannel>(channel =>
-        {
-          var pipeline = channel.Pipeline;
+      if (_channel == null)
+        _channel = _channelFactory?.Create((o, e) => OnTimedout(e), (o, e) => OnPonged(e));
 
-          pipeline.AddLast("encoder", new PacketEncoder());
-          pipeline.AddLast("decoder", new PacketDecoder());
-          pipeline.AddLast("keep-alive", new KeepMeAliveChannel(4));
-          pipeline.AddLast("idle", new ReadIdleStateHandler(10, 3));
-          pipeline.AddLast("client", new ClientChannelHandler());
-          pipeline.AddLast("ping", new PingProcessor());
-          pipeline.AddLast("pong", new PongProcessor(OnPonged));
-          pipeline.AddLast("timeout", new TimeoutHandler());
-        }));
+      if (_channel == null || _channel.Active)
+        return;
 
-      _channel = await bootstrap.ConnectAsync(_option.Host, _option.Port);
+      await _channel.RunAsync();
       OnConnected();
     }
 
     public async Task CloseAsync()
     {
-      await _workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
+      if (_channel == null || !_channel.Active)
+        return;
+
+      await _channel.CloseAsync();
       OnClosed();
     }
   }

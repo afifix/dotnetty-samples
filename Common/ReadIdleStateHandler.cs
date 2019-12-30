@@ -6,8 +6,6 @@ namespace Netty.Examples.Common
 {
   public class ReadIdleStateHandler : IdleStateHandler
   {
-    private const string Tag = "IDLE";
-
     private static readonly IInternalLogger Logger;
 
     private int _retriesCounter;
@@ -31,7 +29,7 @@ namespace Netty.Examples.Common
 
     protected override void ChannelIdle(IChannelHandlerContext ctx, IdleStateEvent stateEvent)
     {
-      Logger.Trace($"[{Tag} - {ctx.Channel.Id}] channel idle: {stateEvent.State}");
+      Logger.Trace($"[{ctx.Channel.Id}] channel idle: {stateEvent.State}");
 
       // fire only read idle event
       if (stateEvent.State != IdleState.ReaderIdle)
@@ -42,7 +40,7 @@ namespace Netty.Examples.Common
 
     public override void ChannelReadComplete(IChannelHandlerContext ctx)
     {
-      Logger.Trace($"[{Tag} - {ctx.Channel.Id}] channel read complete");
+      Logger.Trace($"[{ctx.Channel.Id}] channel read complete");
       // reset retries counter
       _retriesCounter = 0;
 

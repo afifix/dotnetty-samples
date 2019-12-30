@@ -12,6 +12,8 @@ namespace Netty.Examples.Client
 
     event EventHandler<Pong> Ponged;
 
+    event EventHandler<ReadIdleStateEvent> Timedout;
+
     Task RunAsync();
 
     Task CloseAsync();

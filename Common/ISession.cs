@@ -1,16 +1,13 @@
-﻿using Netty.Examples.Common;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
-namespace Netty.Examples.Client
+namespace Netty.Examples.Common
 {
   public interface ISession
   {
     event EventHandler Connected;
 
     event EventHandler Closed;
-
-    event EventHandler<Pong> Ponged;
 
     event EventHandler<ReadIdleStateEvent> Timedout;
 

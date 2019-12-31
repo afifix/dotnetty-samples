@@ -1,4 +1,4 @@
-﻿namespace Netty.Examples.Client
+﻿namespace Netty.Examples.Common
 {
   public interface ISessionOptionProvider
   {

@@ -1,6 +1,5 @@
-﻿using DotNetty.Transport.Bootstrapping;
-using DotNetty.Transport.Channels;
-using DotNetty.Transport.Channels.Sockets;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Netty.Examples.Common;
 using System;
 using System.Threading.Tasks;
@@ -11,44 +10,51 @@ namespace Netty.Examples.Server
     {
         private static async Task RunAsync()
         {
-            const int port = 8007;
-
-            Helper.ConfigureLogger();
-
-            var bossGroup = new MultithreadEventLoopGroup(1);
-            var workerGroup = new MultithreadEventLoopGroup();
-
-            try
+            using (var serviceProvider = Bootstrap())
+            using (var scope = serviceProvider.CreateScope())
             {
-                var bootstrap = new ServerBootstrap();
-                bootstrap.Group(bossGroup, workerGroup);
-                bootstrap.Channel<TcpServerSocketChannel>();
+                var scopeServiceProvider = scope.ServiceProvider;
+                var logger = scopeServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
+                var server = scopeServiceProvider.GetRequiredService<ISession>();
 
-                bootstrap
-                  .Option(ChannelOption.SoBacklog, 100)
-                  .ChildHandler(new ActionChannelInitializer<IChannel>(channel =>
-                  {
-                      channel.Pipeline
-                          .AddLast("encoder", new PacketEncoder())
-                          .AddLast("decoder", new PacketDecoder())
-                          .AddLast("idle", new ReadIdleStateHandler(20, 3))
-                          .AddLast("ping", new PingProcessor())
-                          .AddLast("", new ServerChannelHandler())
-                          .AddLast("timeout", new TimeoutHandler());
-                  }));
+                try
+                {
+                    server.Connected += (o, e) => logger.LogInformation("server started.");
+                    server.Closed += (o, e) => logger.LogInformation("server closed.");
+                    await server.RunAsync();
 
-                var boundChannel = await bootstrap.BindAsync(port);
-
-                Console.ReadLine();
-
-                await boundChannel.CloseAsync();
+                    Console.ReadKey();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error");
+                }
+                finally
+                {
+                    await server.CloseAsync();
+                }
             }
-            finally
-            {
-                await Task.WhenAll(
-                  bossGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)),
-                  workerGroup.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
-            }
+
+            Console.ReadKey();
+        }
+
+        public static ServiceProvider Bootstrap()
+        {
+            var loggerFactory = Helper.ConfigureLogger();
+
+            // initialize DI container
+            var services = new ServiceCollection();
+            services.AddSingleton(loggerFactory);
+            services.AddScoped<DefaultSessionOptionProvider>();
+            services.AddScoped<Server>();
+            services.AddScoped<ISession>(sp => sp.GetRequiredService<Server>());
+            services.AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>());
+            services.AddTransient<ServerChannel>();
+            services.AddScoped<Func<IChannelWrapper>>(sp => sp.GetRequiredService<ServerChannel>);
+            services.AddScoped<ServerChannelFactory>();
+            services.AddScoped<IChannelFactory>(sp => sp.GetRequiredService<ServerChannelFactory>());
+
+            return services.BuildServiceProvider();
         }
 
         private static void Main() => RunAsync().Wait();

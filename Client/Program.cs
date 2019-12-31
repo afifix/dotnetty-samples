@@ -15,13 +15,14 @@ namespace Netty.Examples.Client
       {
         var scopeServiceProvider = scope.ServiceProvider;
         var logger = scopeServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
-        var client = scopeServiceProvider.GetRequiredService<ISession>();
+        var client = scopeServiceProvider.GetRequiredService<IClientSession>();
 
         try
         {
           client.Connected += (o, e) => logger.LogInformation("client connected.");
           client.Closed += (o, e) => logger.LogInformation("client closed.");
-          client.Ponged += (o, e) => logger.LogInformation($"pong received ${e.Latency}");
+          client.Ponged += (o, e) => logger.LogInformation($"pong received ${e.Latency}.");
+          client.Timedout += (o, e) => logger.LogInformation($"server not responding {e.Retries}");
           await client.RunAsync();
 
           Console.ReadKey();
@@ -48,12 +49,12 @@ namespace Netty.Examples.Client
       services.AddSingleton(loggerFactory);
       services.AddScoped<DefaultSessionOptionProvider>();
       services.AddScoped<Client>();
-      services.AddScoped<ISession>(sp => sp.GetRequiredService<Client>());
+      services.AddScoped<IClientSession>(sp => sp.GetRequiredService<Client>());
       services.AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>());
-      services.AddTransient<ChannelClient>();
-      services.AddScoped<Func<IChannelClient>>(sp => sp.GetRequiredService<ChannelClient>);
-      services.AddScoped<ChannelClientFactory>();
-      services.AddScoped<IChannelClientFactory>(sp => sp.GetRequiredService<ChannelClientFactory>());
+      services.AddTransient<ClientChannel>();
+      services.AddScoped<Func<IChannelWrapper>>(sp => sp.GetRequiredService<ClientChannel>);
+      services.AddScoped<ClientChannelFactory>();
+      services.AddScoped<IChannelFactory>(sp => sp.GetRequiredService<ClientChannelFactory>());
 
       return services.BuildServiceProvider();
     }

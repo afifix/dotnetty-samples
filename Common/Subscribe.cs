@@ -14,6 +14,8 @@ namespace Netty.Examples.Common
       };
     }
 
+    public int SubjectId { get; set; }
+
     public TimeSpan Time { get; set; }
   }
 }

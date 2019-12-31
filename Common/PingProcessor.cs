@@ -1,12 +1,13 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
-using System.Threading.Tasks;
 
 namespace Netty.Examples.Common
 {
   public class PingProcessor : SimpleChannelInboundHandler<Ping>
   {
     private static readonly IInternalLogger Logger;
+
+    public override bool IsSharable => true;
 
     static PingProcessor()
     {
@@ -18,16 +19,6 @@ namespace Netty.Examples.Common
       Logger.Trace($"[{ctx.Channel.Id}] channel read0 {msg.Id}");
       var packet = Pong.New(msg);
       ctx.WriteAndFlushAsync(packet);
-    }
-
-    public override Task WriteAsync(IChannelHandlerContext ctx, object message)
-    {
-      if (message is Pong packet)
-      {
-        Logger.Trace($"[{ctx.Channel.Id}] channel write: response to {packet.RequestId}");
-      }
-
-      return ctx.WriteAsync(message);
     }
   }
 }

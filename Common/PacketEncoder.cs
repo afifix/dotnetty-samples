@@ -18,6 +18,8 @@ namespace Netty.Examples.Common
       Logger = InternalLoggerFactory.GetInstance<PacketEncoder>();
     }
 
+    public override bool IsSharable => true;
+
     protected override void Encode(IChannelHandlerContext ctx, Packet packet, List<object> output)
     {
       using (var ms = new MemoryStream())

@@ -1,8 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Netty.Examples.Client
+namespace Netty.Examples.Common
 {
-  public interface IChannelClient
+  public interface IChannelWrapper
   {
     bool Active { get; }
 

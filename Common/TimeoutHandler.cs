@@ -13,20 +13,22 @@ namespace Netty.Examples.Common
       Logger = InternalLoggerFactory.GetInstance<TimeoutHandler>();
     }
 
-    public override void UserEventTriggered(IChannelHandlerContext context, object evt)
+    public override bool IsSharable => true;
+
+    public override void UserEventTriggered(IChannelHandlerContext ctx, object evt)
     {
       if (evt is ReadIdleStateEvent idleStateEvent)
       {
-        var channel = context.Channel;
+        var channel = ctx.Channel;
         Logger.Warn($"[{channel.Id}] READ TIMEOUT {idleStateEvent.Retries} | EXCEEDED: {idleStateEvent.MaxRetriesExceeded}");
         if (idleStateEvent.MaxRetriesExceeded)
         {
-          context.FireExceptionCaught(ReadTimeoutException.Instance);
-          context.CloseAsync();
+          ctx.FireExceptionCaught(ReadTimeoutException.Instance);
+          ctx.CloseAsync();
         }
       }
 
-      base.UserEventTriggered(context, evt);
+      base.UserEventTriggered(ctx, evt);
     }
   }
 }

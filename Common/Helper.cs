@@ -1,6 +1,7 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using System;
 
 namespace Netty.Examples.Common
 {
@@ -13,7 +14,7 @@ namespace Netty.Examples.Common
     {
       // configure Serilog
       Log.Logger = new LoggerConfiguration()
-        .MinimumLevel.Verbose() // set debug as minimum level for Serilog
+        .MinimumLevel.Information() // set debug as minimum level for Serilog
         .Enrich.FromLogContext()
         .WriteTo.Console(outputTemplate: Template)
         .CreateLogger();
@@ -33,6 +34,13 @@ namespace Netty.Examples.Common
       builder.AddSerilog(dispose: true);
       // configure minimum level
       builder.SetMinimumLevel(LogLevel.Trace);
+    }
+
+    public static Action<T1, T2> Nop<T1, T2>()
+      where T1 : class
+      where T2 : class
+    {
+      return (x, y) => { };
     }
   }
 }

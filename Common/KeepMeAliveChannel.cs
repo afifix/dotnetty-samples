@@ -2,10 +2,9 @@
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
-using Netty.Examples.Common;
 using System;
 
-namespace Netty.Examples.Client
+namespace Netty.Examples.Common
 {
   public class KeepMeAliveChannel : ChannelHandlerAdapter
   {

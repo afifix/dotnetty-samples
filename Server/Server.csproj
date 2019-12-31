@@ -243,6 +243,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IServerSession.cs" />
+    <Compile Include="Server.cs" />
+    <Compile Include="ServerChannel.cs" />
+    <Compile Include="ServerChannelFactory.cs" />
     <Compile Include="ServerChannelHandler.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

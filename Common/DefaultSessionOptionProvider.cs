@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Netty.Examples.Client
+namespace Netty.Examples.Common
 {
   public class DefaultSessionOptionProvider : ISessionOptionProvider
   {
@@ -10,8 +10,8 @@ namespace Netty.Examples.Client
       {
         Host = IPAddress.Parse("127.0.0.1"),
         Port = 8007,
-        IdleTimeout = 10,
-        KeepAliveInterval = 5,
+        IdleTimeout = 4,
+        KeepAliveInterval = 2,
         KeepAliveRetries = 3
       };
     }

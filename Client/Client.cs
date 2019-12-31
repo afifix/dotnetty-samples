@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace Netty.Examples.Client
 {
-  public class Client : ISession
+  public class Client : IClientSession
   {
     private readonly ILogger<Client> _logger;
-    private readonly IChannelClientFactory _channelFactory;
+    private readonly IChannelFactory _channelFactory;
 
-    private IChannelClient _channel;
+    private IChannelWrapper _channel;
 
     public Client(
       ILoggerFactory loggerFactory,
-      IChannelClientFactory channelFactory)
+      IChannelFactory channelFactory)
     {
       _logger = loggerFactory?.CreateLogger<Client>() ?? throw new ArgumentNullException(nameof(loggerFactory));
       _channelFactory = channelFactory ?? throw new ArgumentNullException(nameof(channelFactory));
@@ -56,7 +56,13 @@ namespace Netty.Examples.Client
     public async Task RunAsync()
     {
       if (_channel == null)
-        _channel = _channelFactory?.Create((o, e) => OnTimedout(e), (o, e) => OnPonged(e));
+        _channel = _channelFactory?.Create();
+
+      if (_channel is ClientChannel clientChannel)
+      {
+        clientChannel.PongCallback = (o, p) => OnPonged(p);
+        clientChannel.TimeoutCallback = (o, e) => OnTimedout(e);
+      }
 
       if (_channel == null || _channel.Active)
         return;

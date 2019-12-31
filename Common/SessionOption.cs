@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Netty.Examples.Client
+namespace Netty.Examples.Common
 {
   public class SessionOption
   {

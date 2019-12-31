@@ -240,19 +240,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChannelClient.cs" />
-    <Compile Include="ChannelClientFactory.cs" />
+    <Compile Include="ClientChannel.cs" />
+    <Compile Include="ClientChannelFactory.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="ClientChannelHandler.cs" />
-    <Compile Include="DefaultSessionOptionProvider.cs" />
-    <Compile Include="IChannelClient.cs" />
-    <Compile Include="IChannelClientFactory.cs" />
-    <Compile Include="ISession.cs" />
-    <Compile Include="ISessionOptionProvider.cs" />
-    <Compile Include="KeepMeAliveChannel.cs" />
+    <Compile Include="IClientSession.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SessionOption.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

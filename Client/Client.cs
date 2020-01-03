@@ -29,9 +29,12 @@ namespace Netty.Examples.Client
 
     public event EventHandler<ReadIdleStateEvent> Timedout;
 
-    public void OnTimedout(ReadIdleStateEvent ev)
+    public async void OnTimedout(ReadIdleStateEvent ev)
     {
       _logger.LogTrace("raise `Timedout` event");
+      if (ev.MaxRetriesExceeded)
+        await CloseAsync();
+
       ThreadPool.QueueUserWorkItem(s => { Timedout?.Invoke(this, ev); });
     }
 
@@ -55,20 +58,13 @@ namespace Netty.Examples.Client
 
     public async Task RunAsync()
     {
-      if (_channel == null)
-        _channel = _channelFactory?.Create();
-
-      if (_channel is ClientChannel clientChannel)
-      {
-        clientChannel.PongCallback = (o, p) => OnPonged(p);
-        clientChannel.TimeoutCallback = (o, e) => OnTimedout(e);
-      }
+      if (_channel == null && _channelFactory is ClientChannelFactory factory)
+        _channel = factory.Create(OnConnected, OnClosed, OnTimedout, OnPonged);
 
       if (_channel == null || _channel.Active)
         return;
 
       await _channel.RunAsync();
-      OnConnected();
     }
 
     public async Task CloseAsync()
@@ -77,7 +73,6 @@ namespace Netty.Examples.Client
         return;
 
       await _channel.CloseAsync();
-      OnClosed();
     }
   }
 }

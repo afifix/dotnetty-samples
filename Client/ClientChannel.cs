@@ -30,9 +30,13 @@ namespace Netty.Examples.Client
 
     public bool Active => _channel?.Active ?? false;
 
-    internal Action<object, ReadIdleStateEvent> TimeoutCallback { get; set; }
+    internal Action<ReadIdleStateEvent> TimeoutCallback { get; set; }
 
-    internal Action<object, Pong> PongCallback { get; set; }
+    internal Action<Pong> PongCallback { get; set; }
+
+    internal Action ConnectedCallback { get; set; }
+
+    internal Action ClosedCallback { get; set; }
 
     public async Task RunAsync()
     {
@@ -47,15 +51,14 @@ namespace Netty.Examples.Client
       _eventLoop = null;
 
       var pongProcessor = new PongProcessor();
-      pongProcessor.Reading += (o, p) => PongCallback?.Invoke(o, p);
+      pongProcessor.Reading += (o, p) => PongCallback?.Invoke(p);
 
-      var clientHandler = new ClientChannelHandler();
-      clientHandler.Connected += (o, e) => _logger.LogInformation("CONNECTED");
-      clientHandler.Closed += (o, e) => _logger.LogInformation("CLOSED");
-      clientHandler.Activated += (o, e) => _logger.LogInformation("ACTIVATED");
-      clientHandler.Inactivated += (o, e) => _logger.LogInformation("INACTIVATED");
-      clientHandler.Registred += (o, e) => _logger.LogInformation("REGISTRED");
-      clientHandler.Deregistred += (o, e) => _logger.LogInformation("DERISTRED");
+      var clientHandler = new SessionChannelHandler();
+      clientHandler.Connected += (o, e) => ConnectedCallback?.Invoke();
+      clientHandler.Closed += (o, e) => ClosedCallback?.Invoke();
+
+      var timedoutHandler = new TimeoutHandler();
+      timedoutHandler.Timedout += (o, e) => TimeoutCallback?.Invoke(e);
 
       try
       {
@@ -74,7 +77,7 @@ namespace Netty.Examples.Client
             pipeline.AddLast("keep-alive", new KeepMeAliveChannel(_option.KeepAliveInterval));
             pipeline.AddLast("idle", new ReadIdleStateHandler(_option.IdleTimeout, _option.KeepAliveRetries));
             pipeline.AddLast("pong", pongProcessor);
-            pipeline.AddLast("timeout", new TimeoutHandler());
+            pipeline.AddLast("timeout", timedoutHandler);
             pipeline.AddLast("client", clientHandler);
           }));
 
@@ -94,8 +97,17 @@ namespace Netty.Examples.Client
 
       _closing = true;
 
+      if (!_channel.Active)
+      {
+        _channel = null;
+        _eventLoop = null;
+        _closing = false;
+        return;
+      }
+
       try
       {
+        await _channel.CloseAsync();
         await _eventLoop.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
         _channel = null;
         _eventLoop = null;

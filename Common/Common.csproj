@@ -256,6 +256,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SessionChannelHandler.cs" />
     <Compile Include="DefaultSessionOptionProvider.cs" />
     <Compile Include="Helper.cs" />
     <Compile Include="IChannelWrapper.cs" />

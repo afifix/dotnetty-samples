@@ -54,10 +54,19 @@ namespace Netty.Examples.Server
                 _eventLoopParent = new MultithreadEventLoopGroup(1);
                 _eventLoopChild = new MultithreadEventLoopGroup();
 
+                var sessionChannelHandler = new SessionChannelHandler();
+                sessionChannelHandler.Activated += (o, e) => _logger.LogInformation("ACTIVATED");
+                sessionChannelHandler.Inactivated += (o, e) => _logger.LogInformation("INACTIVATED");
+
                 var bootstrap = new ServerBootstrap();
                 bootstrap.Group(_eventLoopParent, _eventLoopChild);
                 bootstrap.Channel<TcpServerSocketChannel>();
 
+                var pingProcessor = new PingProcessor();
+                var timeoutHandler = new TimeoutHandler();
+                var subscribeProcessor = new SubscribeProcessor();
+
+                var decoder = new PacketDecoder();
                 bootstrap
                     .Option(ChannelOption.SoBacklog, 100)
                     .ChildHandler(new ActionChannelInitializer<IChannel>(channel =>
@@ -66,10 +75,10 @@ namespace Netty.Examples.Server
                             .AddLast("encoder", new PacketEncoder())
                             .AddLast("decoder", new PacketDecoder())
                             .AddLast("idle", new ReadIdleStateHandler(20, 3))
-                            .AddLast("ping", new PingProcessor())
-                            //.AddLast("server", new ServerChannelHandler())
-                            .AddLast("subscribe", new SubscribeProcessor())
-                            .AddLast("timeout", new TimeoutHandler());
+                            .AddLast("server", sessionChannelHandler)
+                            .AddLast("ping", pingProcessor)
+                            .AddLast("subscribe", subscribeProcessor)
+                            .AddLast("timeout", timeoutHandler);
                     }));
 
                 _channel = await bootstrap.BindAsync(_option.Port);

@@ -29,6 +29,8 @@ namespace Netty.Examples.Server
 
         public event EventHandler<Ping> Pinged;
 
+        public event EventHandler<Subscribe> Subscribe;
+
         public bool Disposed { get; set; }
 
         public void OnTimedout(ReadIdleStateEvent ev)

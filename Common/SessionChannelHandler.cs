@@ -6,9 +6,9 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Netty.Examples.Client
+namespace Netty.Examples.Common
 {
-  public class ClientChannelHandler : ChannelHandlerAdapter
+  public class SessionChannelHandler : ChannelHandlerAdapter
   {
     private static readonly IInternalLogger Logger;
 
@@ -26,51 +26,69 @@ namespace Netty.Examples.Client
 
     public event EventHandler Disconnected;
 
-    static ClientChannelHandler()
+    public event EventHandler<object> Reading;
+
+    public event EventHandler<object> Writing;
+
+    static SessionChannelHandler()
     {
-      Logger = InternalLoggerFactory.GetInstance<ClientChannelHandler>();
+      Logger = InternalLoggerFactory.GetInstance<SessionChannelHandler>();
     }
+
+    public override bool IsSharable => true;
 
     public override void ChannelActive(IChannelHandlerContext context)
     {
       base.ChannelActive(context);
-      ThreadPool.QueueUserWorkItem(s => { Activated?.Invoke(this, EventArgs.Empty); });
+      ThreadPool.QueueUserWorkItem(s => { Activated?.Invoke(context, EventArgs.Empty); });
     }
 
     public override async Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
     {
       await base.ConnectAsync(context, remoteAddress, localAddress);
-      ThreadPool.QueueUserWorkItem(s => { Connected?.Invoke(this, EventArgs.Empty); });
+      ThreadPool.QueueUserWorkItem(s => { Connected?.Invoke(context, EventArgs.Empty); });
     }
 
     public override void ChannelInactive(IChannelHandlerContext context)
     {
       base.ChannelInactive(context);
-      ThreadPool.QueueUserWorkItem(s => { Inactivated?.Invoke(this, EventArgs.Empty); });
+      ThreadPool.QueueUserWorkItem(s => { Inactivated?.Invoke(context, EventArgs.Empty); });
     }
 
     public override void ChannelRegistered(IChannelHandlerContext context)
     {
       base.ChannelRegistered(context);
-      ThreadPool.QueueUserWorkItem(s => { Registred?.Invoke(this, EventArgs.Empty); });
+      ThreadPool.QueueUserWorkItem(s => { Registred?.Invoke(context, EventArgs.Empty); });
     }
 
     public override async Task DeregisterAsync(IChannelHandlerContext context)
     {
       await base.DeregisterAsync(context);
-      ThreadPool.QueueUserWorkItem(s => { Deregistred?.Invoke(this, EventArgs.Empty); });
+      ThreadPool.QueueUserWorkItem(s => { Deregistred?.Invoke(context, EventArgs.Empty); });
     }
 
     public override async Task DisconnectAsync(IChannelHandlerContext context)
     {
       await base.DisconnectAsync(context);
-      ThreadPool.QueueUserWorkItem(s => { Disconnected?.Invoke(this, EventArgs.Empty); });
+      ThreadPool.QueueUserWorkItem(s => { Disconnected?.Invoke(context, EventArgs.Empty); });
     }
 
     public override async Task CloseAsync(IChannelHandlerContext context)
     {
       await base.CloseAsync(context);
-      ThreadPool.QueueUserWorkItem(s => { Closed?.Invoke(this, EventArgs.Empty); });
+      ThreadPool.QueueUserWorkItem(s => { Closed?.Invoke(context, EventArgs.Empty); });
+    }
+
+    public override void ChannelRead(IChannelHandlerContext context, object message)
+    {
+      base.ChannelRead(context, message);
+      ThreadPool.QueueUserWorkItem(s => { Reading?.Invoke(context, message); });
+    }
+
+    public override async Task WriteAsync(IChannelHandlerContext context, object message)
+    {
+      await base.WriteAsync(context, message);
+      ThreadPool.QueueUserWorkItem(s => { Writing?.Invoke(context, message); });
     }
 
     public override async void ExceptionCaught(IChannelHandlerContext ctx, Exception e)

@@ -13,21 +13,29 @@ namespace Netty.Examples.Client
     }
 
     public IChannelWrapper Create(
-      Action<object, ReadIdleStateEvent> timeoutCallback,
-      Action<object, Pong> pongCallback)
+      Action connectedCallback,
+      Action closedCallback,
+      Action<ReadIdleStateEvent> timeoutCallback,
+      Action<Pong> pongCallback)
     {
-      var channel = _factory();
-      if (!(channel is ClientChannel channelClient))
-        return channel;
+      var c = _factory();
+      if (!(c is ClientChannel channel))
+        return c;
 
-      channelClient.PongCallback = pongCallback ?? throw new ArgumentNullException(nameof(pongCallback));
-      channelClient.TimeoutCallback = timeoutCallback ?? throw new ArgumentNullException(nameof(timeoutCallback));
-      return channel;
+      channel.ConnectedCallback = connectedCallback ?? throw new ArgumentNullException(nameof(connectedCallback));
+      channel.ClosedCallback = closedCallback ?? throw new ArgumentNullException(nameof(closedCallback));
+      channel.PongCallback = pongCallback ?? throw new ArgumentNullException(nameof(pongCallback));
+      channel.TimeoutCallback = timeoutCallback ?? throw new ArgumentNullException(nameof(timeoutCallback));
+      return c;
     }
 
     public IChannelWrapper Create()
     {
-      return Create(Helper.Nop<object, ReadIdleStateEvent>(), Helper.Nop<object, Pong>());
+      return Create(
+        Helper.Nop(),
+        Helper.Nop(),
+        Helper.Nop<ReadIdleStateEvent>(),
+        Helper.Nop<Pong>());
     }
   }
 }

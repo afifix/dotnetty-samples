@@ -19,7 +19,6 @@ namespace Netty.Examples.Common
       Logger = InternalLoggerFactory.GetInstance<PacketDecoder>();
     }
 
-
     protected override void Decode(IChannelHandlerContext ctx, IByteBuffer input, List<object> output)
     {
       if (input.ReadableBytes < 5)

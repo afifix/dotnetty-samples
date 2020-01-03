@@ -1,6 +1,7 @@
 ﻿using DotNetty.Common.Internal.Logging;
-using DotNetty.Handlers.Timeout;
 using DotNetty.Transport.Channels;
+using System;
+using System.Threading;
 
 namespace Netty.Examples.Common
 {
@@ -13,6 +14,8 @@ namespace Netty.Examples.Common
       Logger = InternalLoggerFactory.GetInstance<TimeoutHandler>();
     }
 
+    public event EventHandler<ReadIdleStateEvent> Timedout;
+
     public override bool IsSharable => true;
 
     public override void UserEventTriggered(IChannelHandlerContext ctx, object evt)
@@ -21,11 +24,7 @@ namespace Netty.Examples.Common
       {
         var channel = ctx.Channel;
         Logger.Warn($"[{channel.Id}] READ TIMEOUT {idleStateEvent.Retries} | EXCEEDED: {idleStateEvent.MaxRetriesExceeded}");
-        if (idleStateEvent.MaxRetriesExceeded)
-        {
-          ctx.FireExceptionCaught(ReadTimeoutException.Instance);
-          ctx.CloseAsync();
-        }
+        ThreadPool.QueueUserWorkItem(s => { Timedout?.Invoke(ctx, idleStateEvent); });
       }
 
       base.UserEventTriggered(ctx, evt);

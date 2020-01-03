@@ -15,12 +15,17 @@ namespace Netty.Examples.Server
             {
                 var scopeServiceProvider = scope.ServiceProvider;
                 var logger = scopeServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
-                var server = scopeServiceProvider.GetRequiredService<ISession>();
+                var server = scopeServiceProvider.GetRequiredService<IServerSession>();
 
                 try
                 {
                     server.Connected += (o, e) => logger.LogInformation("server started.");
                     server.Closed += (o, e) => logger.LogInformation("server closed.");
+                    server.NewClientConnected += (o, e) => logger.LogInformation("new client connected");
+                    server.ClientDisconnected += (o, e) => logger.LogInformation("client disconnected");
+                    server.ClientTimedout += (o, e) => logger.LogInformation("client timedout");
+                    server.ClientSubscribing += (o, e) => logger.LogInformation("client subscribing");
+                    server.ClientSubscribed += (o, e) => logger.LogInformation("client subscribed");
                     await server.RunAsync();
 
                     Console.ReadKey();
@@ -46,8 +51,10 @@ namespace Netty.Examples.Server
             var services = new ServiceCollection();
             services.AddSingleton(loggerFactory);
             services.AddScoped<DefaultSessionOptionProvider>();
+            services.AddScoped<FakeSubjectProvider>();
+            services.AddScoped<ISubjectProvider>(sp => sp.GetRequiredService<FakeSubjectProvider>());
             services.AddScoped<Server>();
-            services.AddScoped<ISession>(sp => sp.GetRequiredService<Server>());
+            services.AddScoped<IServerSession>(sp => sp.GetRequiredService<Server>());
             services.AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>());
             services.AddTransient<ServerChannel>();
             services.AddScoped<Func<IChannelWrapper>>(sp => sp.GetRequiredService<ServerChannel>);

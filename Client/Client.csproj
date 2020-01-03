@@ -243,7 +243,6 @@
     <Compile Include="ClientChannel.cs" />
     <Compile Include="ClientChannelFactory.cs" />
     <Compile Include="Client.cs" />
-    <Compile Include="ClientChannelHandler.cs" />
     <Compile Include="IClientSession.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -9,6 +9,7 @@ namespace Netty.Examples.Common
     // the default constructor is only used for json deserialization
     public static Pong New(Ping ping)
     {
+      if (ping == null) throw new ArgumentNullException(nameof(ping));
       var time = TimeUtil.GetSystemTime();
       return new Pong
       {

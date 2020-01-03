@@ -37,14 +37,11 @@ namespace Netty.Examples.Common
     }
 
     public static Action<T1, T2> Nop<T1, T2>()
-      where T1 : class
-      where T2 : class
     {
       return (x, y) => { };
     }
 
     public static Action<T1> Nop<T1>()
-      where T1 : class
     {
       return x => { };
     }

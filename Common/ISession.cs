@@ -9,8 +9,6 @@ namespace Netty.Examples.Common
 
     event EventHandler Closed;
 
-    event EventHandler<ReadIdleStateEvent> Timedout;
-
     Task RunAsync();
 
     Task CloseAsync();

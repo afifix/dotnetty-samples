@@ -12,23 +12,23 @@ namespace Netty.Examples.Common
   {
     private static readonly IInternalLogger Logger;
 
-    public event EventHandler Activated;
+    public event NettyEventHandler Activated;
 
-    public event EventHandler Inactivated;
+    public event NettyEventHandler Inactivated;
 
-    public event EventHandler Closed;
+    public event NettyEventHandler Closed;
 
-    public event EventHandler Registred;
+    public event NettyEventHandler Registred;
 
-    public event EventHandler Deregistred;
+    public event NettyEventHandler Deregistred;
 
-    public event EventHandler Connected;
+    public event NettyEventHandler Connected;
 
-    public event EventHandler Disconnected;
+    public event NettyEventHandler Disconnected;
 
-    public event EventHandler<object> Reading;
+    public event NettyEventHandler<object> Reading;
 
-    public event EventHandler<object> Writing;
+    public event NettyEventHandler<object> Writing;
 
     static SessionChannelHandler()
     {
@@ -39,69 +39,77 @@ namespace Netty.Examples.Common
 
     public override void ChannelActive(IChannelHandlerContext context)
     {
-      base.ChannelActive(context);
+      Logger.Trace("channel active");
       ThreadPool.QueueUserWorkItem(s => { Activated?.Invoke(context, EventArgs.Empty); });
+      base.ChannelActive(context);
     }
 
     public override async Task ConnectAsync(IChannelHandlerContext context, EndPoint remoteAddress, EndPoint localAddress)
     {
-      await base.ConnectAsync(context, remoteAddress, localAddress);
+      Logger.Trace("connect async");
       ThreadPool.QueueUserWorkItem(s => { Connected?.Invoke(context, EventArgs.Empty); });
+      await base.ConnectAsync(context, remoteAddress, localAddress);
     }
 
     public override void ChannelInactive(IChannelHandlerContext context)
     {
-      base.ChannelInactive(context);
+      Logger.Trace("channel inactive");
       ThreadPool.QueueUserWorkItem(s => { Inactivated?.Invoke(context, EventArgs.Empty); });
+      base.ChannelInactive(context);
     }
 
     public override void ChannelRegistered(IChannelHandlerContext context)
     {
-      base.ChannelRegistered(context);
+      Logger.Trace("channel registred");
       ThreadPool.QueueUserWorkItem(s => { Registred?.Invoke(context, EventArgs.Empty); });
+      base.ChannelRegistered(context);
     }
 
     public override async Task DeregisterAsync(IChannelHandlerContext context)
     {
-      await base.DeregisterAsync(context);
+      Logger.Trace("channel deregistred");
       ThreadPool.QueueUserWorkItem(s => { Deregistred?.Invoke(context, EventArgs.Empty); });
+      await base.DeregisterAsync(context);
     }
 
     public override async Task DisconnectAsync(IChannelHandlerContext context)
     {
-      await base.DisconnectAsync(context);
+      Logger.Trace("disconnect async");
       ThreadPool.QueueUserWorkItem(s => { Disconnected?.Invoke(context, EventArgs.Empty); });
+      await base.DisconnectAsync(context);
     }
 
     public override async Task CloseAsync(IChannelHandlerContext context)
     {
-      await base.CloseAsync(context);
+      Logger.Trace("close async");
       ThreadPool.QueueUserWorkItem(s => { Closed?.Invoke(context, EventArgs.Empty); });
+      await base.CloseAsync(context);
     }
 
     public override void ChannelRead(IChannelHandlerContext context, object message)
     {
-      base.ChannelRead(context, message);
+      Logger.Trace("channel read");
       ThreadPool.QueueUserWorkItem(s => { Reading?.Invoke(context, message); });
+      base.ChannelRead(context, message);
     }
 
     public override async Task WriteAsync(IChannelHandlerContext context, object message)
     {
-      await base.WriteAsync(context, message);
+      Logger.Trace("write async");
       ThreadPool.QueueUserWorkItem(s => { Writing?.Invoke(context, message); });
+      await base.WriteAsync(context, message);
     }
 
-    public override async void ExceptionCaught(IChannelHandlerContext ctx, Exception e)
+    public override void ExceptionCaught(IChannelHandlerContext ctx, Exception e)
     {
+      Logger.Trace("exception caught");
       if (e is ReadTimeoutException re)
       {
         Logger.Error($"[{ctx.Channel.Id}] channel timeout exception: {re.Message}");
-        await CloseAsync(ctx);
         return;
       }
 
       Logger.Error($"[{ctx.Channel.Id}] channel exception: {e.Message}");
-      await CloseAsync(ctx);
     }
   }
 }

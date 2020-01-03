@@ -1,6 +1,5 @@
 ﻿using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
-using System;
 using System.Threading;
 
 namespace Netty.Examples.Common
@@ -14,7 +13,7 @@ namespace Netty.Examples.Common
       Logger = InternalLoggerFactory.GetInstance<TimeoutHandler>();
     }
 
-    public event EventHandler<ReadIdleStateEvent> Timedout;
+    public event NettyEventHandler<ReadIdleStateEvent> Timedout;
 
     public override bool IsSharable => true;
 

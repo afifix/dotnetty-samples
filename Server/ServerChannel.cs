@@ -20,7 +20,11 @@ namespace Netty.Examples.Server
         private readonly SessionOption _option;
         private readonly ILogger<ServerChannel> _logger;
 
-        internal Action<object, ReadIdleStateEvent> TimeoutCallback { get; set; }
+        internal Action<IChannelHandlerContext, ReadIdleStateEvent> ClientTimedoutCallback { get; set; }
+        internal Action<IChannelHandlerContext, Ping> ClientPingCallback { get; set; }
+        internal Action<IChannelHandlerContext, Subscribe> ClientSubscribeCallback { get; set; }
+        internal Action<IChannelHandlerContext> NewClientConnectedCallback { get; set; }
+        internal Action<IChannelHandlerContext> ClientDisconnectedCallback { get; set; }
 
         public ServerChannel(
             ILoggerFactory loggerFactory,
@@ -51,22 +55,22 @@ namespace Netty.Examples.Server
 
             try
             {
+                var sessionChannelHandler = new SessionChannelHandler();
+                sessionChannelHandler.Activated += (o, e) => NewClientConnectedCallback?.Invoke(o);
+                sessionChannelHandler.Inactivated += (o, e) => ClientDisconnectedCallback?.Invoke(o);
+                var pingProcessor = new PingProcessor();
+                pingProcessor.Reading += (o, e) => ClientPingCallback?.Invoke(o, e);
+                var timeoutHandler = new TimeoutHandler();
+                timeoutHandler.Timedout += (o, e) => ClientTimedoutCallback?.Invoke(o, e);
+                var subscribeProcessor = new SubscribeProcessor();
+                subscribeProcessor.Reading += (o, e) => ClientSubscribeCallback?.Invoke(o, e);
+
                 _eventLoopParent = new MultithreadEventLoopGroup(1);
                 _eventLoopChild = new MultithreadEventLoopGroup();
-
-                var sessionChannelHandler = new SessionChannelHandler();
-                sessionChannelHandler.Activated += (o, e) => _logger.LogInformation("ACTIVATED");
-                sessionChannelHandler.Inactivated += (o, e) => _logger.LogInformation("INACTIVATED");
 
                 var bootstrap = new ServerBootstrap();
                 bootstrap.Group(_eventLoopParent, _eventLoopChild);
                 bootstrap.Channel<TcpServerSocketChannel>();
-
-                var pingProcessor = new PingProcessor();
-                var timeoutHandler = new TimeoutHandler();
-                var subscribeProcessor = new SubscribeProcessor();
-
-                var decoder = new PacketDecoder();
                 bootstrap
                     .Option(ChannelOption.SoBacklog, 100)
                     .ChildHandler(new ActionChannelInitializer<IChannel>(channel =>
@@ -112,6 +116,15 @@ namespace Netty.Examples.Server
             {
                 _closing = false;
             }
+        }
+
+        public async Task WriteAsync(Packet message)
+        {
+            if (_channel == null || !_channel.Active || _closing || Disposed || _connecting)
+                return;
+
+            _logger.LogTrace("writing.");
+            await _channel.WriteAsync("test");
         }
 
         public async void Dispose()

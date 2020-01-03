@@ -256,6 +256,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FakeSubjectProvider.cs" />
+    <Compile Include="ISubjectProvider.cs" />
+    <Compile Include="NettyEventHandler.cs" />
+    <Compile Include="PacketProcessor.cs" />
     <Compile Include="SessionChannelHandler.cs" />
     <Compile Include="DefaultSessionOptionProvider.cs" />
     <Compile Include="Helper.cs" />
@@ -273,6 +277,7 @@
     <Compile Include="SessionOption.cs" />
     <Compile Include="Suback.cs" />
     <Compile Include="SubackProcessor.cs" />
+    <Compile Include="Subject.cs" />
     <Compile Include="SubscribeProcessor.cs" />
     <Compile Include="PongProcessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

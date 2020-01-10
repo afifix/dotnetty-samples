@@ -1,5 +1,6 @@
 ﻿using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
+using DotNetty.Transport.Channels.Groups;
 using DotNetty.Transport.Channels.Sockets;
 using Microsoft.Extensions.Logging;
 using Netty.Examples.Common;
@@ -38,6 +39,8 @@ namespace Netty.Examples.Client
 
     internal Action ClosedCallback { get; set; }
 
+    internal Action<Suback> SubackCallback { get; set; }
+
     public async Task RunAsync()
     {
       if (_connecting || _closing)
@@ -49,6 +52,9 @@ namespace Netty.Examples.Client
       _connecting = true;
       _channel = null;
       _eventLoop = null;
+
+      var subackProcessor = new SubackProcessor();
+      subackProcessor.Reading += (o, p) => SubackCallback?.Invoke(p);
 
       var pongProcessor = new PongProcessor();
       pongProcessor.Reading += (o, p) => PongCallback?.Invoke(p);
@@ -77,6 +83,7 @@ namespace Netty.Examples.Client
             pipeline.AddLast("keep-alive", new KeepMeAliveChannel(_option.KeepAliveInterval));
             pipeline.AddLast("idle", new ReadIdleStateHandler(_option.IdleTimeout, _option.KeepAliveRetries));
             pipeline.AddLast("pong", pongProcessor);
+            pipeline.AddLast("suback", subackProcessor);
             pipeline.AddLast("timeout", timedoutHandler);
             pipeline.AddLast("client", clientHandler);
           }));
@@ -119,12 +126,27 @@ namespace Netty.Examples.Client
       }
     }
 
+    public async Task WriteAsync(Packet packet)
+    {
+      if (_channel == null || !_channel.Active || _closing || _connecting || Disposed)
+        return;
+
+      await _channel.WriteAndFlushAsync(packet);
+    }
+
     public async void Dispose()
     {
       if (Disposed) return;
       await CloseAsync();
       Disposed = true;
       _logger.LogTrace("disposed.");
+    }
+
+    public IChannelGroup ChannelGroup => throw new NotImplementedException();
+
+    public IChannelGroup NewChannelGroup()
+    {
+      throw new NotImplementedException();
     }
   }
 }

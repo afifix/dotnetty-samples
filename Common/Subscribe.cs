@@ -5,12 +5,13 @@ namespace Netty.Examples.Common
 {
   public class Subscribe : Packet
   {
-    public static Subscribe New()
+    public static Subscribe New(int subjectId)
     {
       return new Subscribe
       {
         Id = Guid.NewGuid(),
-        Time = TimeUtil.GetSystemTime()
+        Time = TimeUtil.GetSystemTime(),
+        SubjectId = subjectId
       };
     }
 

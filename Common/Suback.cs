@@ -5,14 +5,16 @@ namespace Netty.Examples.Common
 {
   public class Suback : Packet
   {
-    public static Suback New(Subscribe packet)
+    public static Suback New(Subscribe packet, short result, string message = null)
     {
       return new Suback
       {
         Id = Guid.NewGuid(),
         RequestId = packet.Id,
         SubjectId = packet.SubjectId,
-        Time = TimeUtil.GetSystemTime()
+        Time = TimeUtil.GetSystemTime(),
+        Result = result,
+        Message = message ?? string.Empty
       };
     }
 

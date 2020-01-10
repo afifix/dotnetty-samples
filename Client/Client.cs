@@ -29,10 +29,17 @@ namespace Netty.Examples.Client
 
     public event EventHandler<ReadIdleStateEvent> Timedout;
 
+    public event EventHandler<Suback> Subacked;
+
+    public async Task SubscribeAsync(int subjectId)
+    {
+      await _channel.WriteAsync(Subscribe.New(subjectId));
+    }
+
     public async Task RunAsync()
     {
       if (_channel == null && _channelFactory is ClientChannelFactory factory)
-        _channel = factory.Create(OnConnected, OnClosed, OnTimedout, OnPonged);
+        _channel = factory.Create(OnConnected, OnClosed, OnTimedout, OnPonged, OnSubacked);
 
       if (_channel == null || _channel.Active)
         return;
@@ -73,6 +80,12 @@ namespace Netty.Examples.Client
     {
       _logger.LogTrace("raise `Ponged` event");
       ThreadPool.QueueUserWorkItem(s => { Ponged?.Invoke(this, packet); });
+    }
+
+    internal void OnSubacked(Suback packet)
+    {
+      _logger.LogTrace("raise `Subacked` event");
+      ThreadPool.QueueUserWorkItem(s => { Subacked?.Invoke(this, packet); });
     }
   }
 }

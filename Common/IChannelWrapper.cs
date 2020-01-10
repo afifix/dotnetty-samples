@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using DotNetty.Transport.Channels.Groups;
+using System.Threading.Tasks;
 
 namespace Netty.Examples.Common
 {
@@ -9,5 +10,11 @@ namespace Netty.Examples.Common
     Task RunAsync();
 
     Task CloseAsync();
+
+    Task WriteAsync(Packet packet);
+
+    IChannelGroup ChannelGroup { get; }
+
+    IChannelGroup NewChannelGroup();
   }
 }

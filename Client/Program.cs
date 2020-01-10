@@ -22,8 +22,12 @@ namespace Netty.Examples.Client
           client.Connected += (o, e) => logger.LogInformation("client connected.");
           client.Closed += (o, e) => logger.LogInformation("client closed.");
           client.Ponged += (o, e) => logger.LogInformation($"pong received ${e.Latency}.");
+          client.Subacked += (o, e) =>
+            logger.LogInformation($"subscription to subject {e.SubjectId} ${(e.Result == 0 ? "not" : string.Empty)} accepted - {e.Message}.");
           client.Timedout += (o, e) => logger.LogInformation($"server not responding {e.Retries}");
           await client.RunAsync();
+          await client.SubscribeAsync(2);
+          await client.SubscribeAsync(1);
 
           Console.ReadKey();
         }

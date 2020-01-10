@@ -1,5 +1,6 @@
 ﻿using Netty.Examples.Common;
 using System;
+using System.Threading.Tasks;
 
 namespace Netty.Examples.Client
 {
@@ -8,5 +9,9 @@ namespace Netty.Examples.Client
     event EventHandler<Pong> Ponged;
 
     event EventHandler<ReadIdleStateEvent> Timedout;
+
+    event EventHandler<Suback> Subacked;
+
+    Task SubscribeAsync(int subjectId);
   }
 }

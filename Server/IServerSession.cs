@@ -9,8 +9,6 @@ namespace Netty.Examples.Server
 
         event EventHandler<Ping> ClientPinged;
 
-        event EventHandler<Subscribe> ClientSubscribing;
-
         event EventHandler<Subscribe> ClientSubscribed;
 
         event EventHandler NewClientConnected;

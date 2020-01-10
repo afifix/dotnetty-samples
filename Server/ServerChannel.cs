@@ -1,5 +1,6 @@
 ﻿using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
+using DotNetty.Transport.Channels.Groups;
 using DotNetty.Transport.Channels.Sockets;
 using Microsoft.Extensions.Logging;
 using Netty.Examples.Common;
@@ -40,6 +41,17 @@ namespace Netty.Examples.Server
 
         public bool Active => _channel?.Active ?? false;
 
+        public IChannelGroup ChannelGroup { get; private set; }
+
+        public IChannelGroup NewChannelGroup()
+        {
+            if (_channel == null || !_channel.Active)
+                throw new ApplicationException("server not running.");
+
+            var executor = _channel.Pipeline.FirstContext().Executor;
+            return new DefaultChannelGroup(executor);
+        }
+
         public async Task RunAsync()
         {
             if (_connecting || _closing)
@@ -52,6 +64,11 @@ namespace Netty.Examples.Server
             _channel = null;
             _eventLoopParent = null;
             _eventLoopParent = null;
+            if (ChannelGroup != null)
+            {
+                await ChannelGroup.CloseAsync();
+                ChannelGroup = null;
+            }
 
             try
             {
@@ -78,20 +95,33 @@ namespace Netty.Examples.Server
                         channel.Pipeline
                             .AddLast("encoder", new PacketEncoder())
                             .AddLast("decoder", new PacketDecoder())
-                            .AddLast("idle", new ReadIdleStateHandler(20, 3))
+                            .AddLast("idle", new ReadIdleStateHandler(5, 3))
                             .AddLast("server", sessionChannelHandler)
                             .AddLast("ping", pingProcessor)
                             .AddLast("subscribe", subscribeProcessor)
                             .AddLast("timeout", timeoutHandler);
+
+                        ChannelGroup.Add(channel);
                     }));
 
                 _channel = await bootstrap.BindAsync(_option.Port);
+                var executor = _channel.Pipeline.FirstContext().Executor;
+                ChannelGroup = new DefaultChannelGroup("clients", executor);
+
                 _logger.LogTrace("started.");
             }
             finally
             {
                 _connecting = false;
             }
+        }
+
+        public async Task WriteAsync(Packet packet)
+        {
+            if (_channel == null || !_channel.Active || _closing || _connecting || Disposed)
+                return;
+
+            await _channel.WriteAndFlushAsync(packet);
         }
 
         public async Task CloseAsync()
@@ -107,7 +137,10 @@ namespace Netty.Examples.Server
                     _eventLoopParent.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)),
                     _eventLoopChild.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
 
+                await ChannelGroup.CloseAsync();
+
                 _channel = null;
+                ChannelGroup = null;
                 _eventLoopParent = null;
                 _eventLoopChild = null;
                 _logger.LogTrace("closed.");
@@ -116,15 +149,6 @@ namespace Netty.Examples.Server
             {
                 _closing = false;
             }
-        }
-
-        public async Task WriteAsync(Packet message)
-        {
-            if (_channel == null || !_channel.Active || _closing || Disposed || _connecting)
-                return;
-
-            _logger.LogTrace("writing.");
-            await _channel.WriteAsync("test");
         }
 
         public async void Dispose()

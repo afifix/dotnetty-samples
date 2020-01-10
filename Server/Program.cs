@@ -24,7 +24,6 @@ namespace Netty.Examples.Server
                     server.NewClientConnected += (o, e) => logger.LogInformation("new client connected");
                     server.ClientDisconnected += (o, e) => logger.LogInformation("client disconnected");
                     server.ClientTimedout += (o, e) => logger.LogInformation("client timedout");
-                    server.ClientSubscribing += (o, e) => logger.LogInformation("client subscribing");
                     server.ClientSubscribed += (o, e) => logger.LogInformation("client subscribed");
                     await server.RunAsync();
 

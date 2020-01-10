@@ -16,7 +16,8 @@ namespace Netty.Examples.Client
       Action connectedCallback,
       Action closedCallback,
       Action<ReadIdleStateEvent> timeoutCallback,
-      Action<Pong> pongCallback)
+      Action<Pong> pongCallback,
+      Action<Suback> subackCallback)
     {
       var c = _factory();
       if (!(c is ClientChannel channel))
@@ -26,6 +27,7 @@ namespace Netty.Examples.Client
       channel.ClosedCallback = closedCallback ?? throw new ArgumentNullException(nameof(closedCallback));
       channel.PongCallback = pongCallback ?? throw new ArgumentNullException(nameof(pongCallback));
       channel.TimeoutCallback = timeoutCallback ?? throw new ArgumentNullException(nameof(timeoutCallback));
+      channel.SubackCallback = subackCallback ?? throw new ArgumentNullException(nameof(subackCallback));
       return c;
     }
 
@@ -35,7 +37,8 @@ namespace Netty.Examples.Client
         Helper.Nop(),
         Helper.Nop(),
         Helper.Nop<ReadIdleStateEvent>(),
-        Helper.Nop<Pong>());
+        Helper.Nop<Pong>(),
+        Helper.Nop<Suback>());
     }
   }
 }

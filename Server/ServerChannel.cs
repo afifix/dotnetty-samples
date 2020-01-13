@@ -1,15 +1,18 @@
-﻿using DotNetty.Transport.Bootstrapping;
+﻿using System;
+using System.Threading.Tasks;
+
+using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Groups;
 using DotNetty.Transport.Channels.Sockets;
+
 using Microsoft.Extensions.Logging;
+
 using Netty.Examples.Common;
-using System;
-using System.Threading.Tasks;
 
 namespace Netty.Examples.Server
 {
-    public class ServerChannel : IChannelWrapper, IDisposable
+    public class ServerChannel : IChannelWrapper
     {
         private IChannel _channel;
         private IEventLoopGroup _eventLoopParent;
@@ -21,11 +24,13 @@ namespace Netty.Examples.Server
         private readonly SessionOption _option;
         private readonly ILogger<ServerChannel> _logger;
 
-        internal Action<IChannelHandlerContext, ReadIdleStateEvent> ClientTimedoutCallback { get; set; }
-        internal Action<IChannelHandlerContext, Ping> ClientPingCallback { get; set; }
-        internal Action<IChannelHandlerContext, Subscribe> ClientSubscribeCallback { get; set; }
-        internal Action<IChannelHandlerContext> NewClientConnectedCallback { get; set; }
-        internal Action<IChannelHandlerContext> ClientDisconnectedCallback { get; set; }
+        private bool _disposed;
+
+        internal Action<NettyEventArgs> NewClientConnectedCallback { get; set; }
+        internal Action<NettyEventArgs> ClientDisconnectedCallback { get; set; }
+        internal Action<ReadIdleStateEventArgs> ClientTimedoutCallback { get; set; }
+        internal Action<NettyPacketEventArgs<Ping>> ClientPingCallback { get; set; }
+        internal Action<NettyPacketEventArgs<Subscribe>> ClientSubscribeCallback { get; set; }
 
         public ServerChannel(
             ILoggerFactory loggerFactory,
@@ -37,15 +42,13 @@ namespace Netty.Examples.Server
             _option = sessionOptionProvider?.Get() ?? throw new ArgumentNullException(nameof(sessionOptionProvider));
         }
 
-        public bool Disposed { get; set; }
-
         public bool Active => _channel?.Active ?? false;
 
         public IChannelGroup ChannelGroup { get; private set; }
 
         public IChannelGroup NewChannelGroup()
         {
-            if (_channel == null || !_channel.Active)
+            if(_channel == null || !_channel.Active)
                 throw new ApplicationException("server not running.");
 
             var executor = _channel.Pipeline.FirstContext().Executor;
@@ -54,17 +57,17 @@ namespace Netty.Examples.Server
 
         public async Task RunAsync()
         {
-            if (_connecting || _closing)
+            if(_connecting || _closing)
                 return;
 
-            if (_channel != null && _channel.Active)
+            if(_channel != null && _channel.Active)
                 return;
 
             _connecting = true;
             _channel = null;
             _eventLoopParent = null;
             _eventLoopParent = null;
-            if (ChannelGroup != null)
+            if(ChannelGroup != null)
             {
                 await ChannelGroup.CloseAsync();
                 ChannelGroup = null;
@@ -73,26 +76,24 @@ namespace Netty.Examples.Server
             try
             {
                 var sessionChannelHandler = new SessionChannelHandler();
-                sessionChannelHandler.Activated += (o, e) => NewClientConnectedCallback?.Invoke(o);
-                sessionChannelHandler.Inactivated += (o, e) => ClientDisconnectedCallback?.Invoke(o);
+                sessionChannelHandler.Activated += (o, e) => NewClientConnectedCallback?.Invoke(e);
+                sessionChannelHandler.Inactivated += (o, e) => ClientDisconnectedCallback?.Invoke(e);
                 var pingProcessor = new PingProcessor();
-                pingProcessor.Reading += (o, e) => ClientPingCallback?.Invoke(o, e);
+                pingProcessor.Reading += (o, e) => ClientPingCallback?.Invoke(e);
                 var timeoutHandler = new TimeoutHandler();
-                timeoutHandler.Timedout += (o, e) => ClientTimedoutCallback?.Invoke(o, e);
+                timeoutHandler.Timedout += (o, e) => ClientTimedoutCallback?.Invoke(e);
                 var subscribeProcessor = new SubscribeProcessor();
-                subscribeProcessor.Reading += (o, e) => ClientSubscribeCallback?.Invoke(o, e);
+                subscribeProcessor.Reading += (o, e) => ClientSubscribeCallback?.Invoke(e);
 
                 _eventLoopParent = new MultithreadEventLoopGroup(1);
                 _eventLoopChild = new MultithreadEventLoopGroup();
 
-                var bootstrap = new ServerBootstrap();
-                bootstrap.Group(_eventLoopParent, _eventLoopChild);
-                bootstrap.Channel<TcpServerSocketChannel>();
-                bootstrap
+                var bootstrap = new ServerBootstrap()
+                    .Group(_eventLoopParent, _eventLoopChild)
+                    .Channel<TcpServerSocketChannel>()
                     .Option(ChannelOption.SoBacklog, 100)
-                    .ChildHandler(new ActionChannelInitializer<IChannel>(channel =>
-                    {
-                        channel.Pipeline
+                    .ChildHandler(new ActionChannelInitializer<IChannel>(channel => {
+                        _ = channel.Pipeline
                             .AddLast("encoder", new PacketEncoder())
                             .AddLast("decoder", new PacketDecoder())
                             .AddLast("idle", new ReadIdleStateHandler(5, 3))
@@ -118,7 +119,7 @@ namespace Netty.Examples.Server
 
         public async Task WriteAsync(Packet packet)
         {
-            if (_channel == null || !_channel.Active || _closing || _connecting || Disposed)
+            if(_channel == null || !_channel.Active || _closing || _connecting || _disposed)
                 return;
 
             await _channel.WriteAndFlushAsync(packet);
@@ -126,7 +127,7 @@ namespace Netty.Examples.Server
 
         public async Task CloseAsync()
         {
-            if (_closing || _channel == null)
+            if(_closing || _channel == null)
                 return;
 
             _closing = true;
@@ -151,12 +152,31 @@ namespace Netty.Examples.Server
             }
         }
 
-        public async void Dispose()
+#pragma warning disable CA1063 // Implement IDisposable Correctly
+        public void Dispose()
         {
-            if (Disposed) return;
-            await CloseAsync();
-            Disposed = true;
+            if(_disposed)
+                return;
+
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual async void Dispose(bool disposing)
+        {
+            if(_disposed)
+                return;
+
+            if(disposing)
+                await CloseAsync();
+
+            _disposed = true;
             _logger.LogTrace("disposed.");
+        }
+
+        ~ServerChannel()
+        {
+            Dispose(false);
         }
     }
 }

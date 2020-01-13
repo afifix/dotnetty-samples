@@ -1,6 +1,6 @@
 ﻿namespace Netty.Examples.Common
 {
-  public class SubackProcessor : PacketProcessor<Suback>
-  {
-  }
+    public class SubackProcessor : PacketProcessor<Suback>
+    {
+    }
 }

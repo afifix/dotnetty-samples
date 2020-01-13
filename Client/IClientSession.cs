@@ -1,17 +1,18 @@
-﻿using Netty.Examples.Common;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+
+using Netty.Examples.Common;
 
 namespace Netty.Examples.Client
 {
-  public interface IClientSession : ISession
-  {
-    event EventHandler<Pong> Ponged;
+    public interface IClientSession : ISession
+    {
+        event EventHandler<ReadIdleStateEventArgs> Timedout;
 
-    event EventHandler<ReadIdleStateEvent> Timedout;
+        event EventHandler<PacketEventArgs<Pong>> Ponged;
 
-    event EventHandler<Suback> Subacked;
+        event EventHandler<PacketEventArgs<Suback>> Subacked;
 
-    Task SubscribeAsync(int subjectId);
-  }
+        Task SubscribeAsync(int id);
+    }
 }

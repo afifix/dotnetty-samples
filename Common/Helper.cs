@@ -1,54 +1,57 @@
-﻿using DotNetty.Common.Internal.Logging;
+﻿using System;
+
+using DotNetty.Common.Internal.Logging;
+
 using Microsoft.Extensions.Logging;
+
 using Serilog;
-using System;
 
 namespace Netty.Examples.Common
 {
-  public static class Helper
-  {
-    private const string Template =
-      "[{Timestamp:HH:mm:ss} {Level:u3}] <:{SourceContext}> {Message:lj}{NewLine}{Exception}";
-
-    public static ILoggerFactory ConfigureLogger()
+    public static class Helper
     {
-      // configure Serilog
-      Log.Logger = new LoggerConfiguration()
-        .MinimumLevel.Information() // set debug as minimum level for Serilog
-        .Enrich.FromLogContext()
-        .WriteTo.Console(outputTemplate: Template)
-        .CreateLogger();
+        private const string Template =
+          "[{Timestamp:HH:mm:ss} {Level:u3}] <:{SourceContext}> {Message:lj}{NewLine}{Exception}";
 
-      // create an instance of `ILoggerFactory`
-      var loggerFactory = LoggerFactory.Create(BuildLoggerFactory);
+        public static ILoggerFactory ConfigureLogger()
+        {
+            // configure Serilog
+            Log.Logger = new LoggerConfiguration()
+              .MinimumLevel.Information() // set debug as minimum level for Serilog
+              .Enrich.FromLogContext()
+              .WriteTo.Console(outputTemplate: Template)
+              .CreateLogger();
 
-      // override the DotNetty default logging factory
-      InternalLoggerFactory.DefaultFactory = loggerFactory;
+            // create an instance of `ILoggerFactory`
+            var loggerFactory = LoggerFactory.Create(BuildLoggerFactory);
 
-      return loggerFactory;
+            // override the DotNetty default logging factory
+            InternalLoggerFactory.DefaultFactory = loggerFactory;
+
+            return loggerFactory;
+        }
+
+        public static void BuildLoggerFactory(ILoggingBuilder builder)
+        {
+            // configure providers
+            builder.AddSerilog(dispose: true);
+            // configure minimum level
+            builder.SetMinimumLevel(LogLevel.Trace);
+        }
+
+        public static Action<T1, T2> Nop<T1, T2>()
+        {
+            return (x, y) => { };
+        }
+
+        public static Action<T1> Nop<T1>()
+        {
+            return x => { };
+        }
+
+        public static Action Nop()
+        {
+            return () => { };
+        }
     }
-
-    public static void BuildLoggerFactory(ILoggingBuilder builder)
-    {
-      // configure providers
-      builder.AddSerilog(dispose: true);
-      // configure minimum level
-      builder.SetMinimumLevel(LogLevel.Trace);
-    }
-
-    public static Action<T1, T2> Nop<T1, T2>()
-    {
-      return (x, y) => { };
-    }
-
-    public static Action<T1> Nop<T1>()
-    {
-      return x => { };
-    }
-
-    public static Action Nop()
-    {
-      return () => { };
-    }
-  }
 }

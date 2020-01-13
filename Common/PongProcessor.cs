@@ -1,6 +1,6 @@
 ﻿namespace Netty.Examples.Common
 {
-  public class PongProcessor : PacketProcessor<Pong>
-  {
-  }
+    public class PongProcessor : PacketProcessor<Pong>
+    {
+    }
 }

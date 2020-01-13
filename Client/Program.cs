@@ -1,68 +1,72 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Netty.Examples.Common;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+using Netty.Examples.Common;
 
 namespace Netty.Examples.Client
 {
-  internal class Program
-  {
-    private static async Task RunAsync()
+    internal class Program
     {
-      using (var serviceProvider = Bootstrap())
-      using (var scope = serviceProvider.CreateScope())
-      {
-        var scopeServiceProvider = scope.ServiceProvider;
-        var logger = scopeServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
-        var client = scopeServiceProvider.GetRequiredService<IClientSession>();
-
-        try
+        private static async Task RunAsync()
         {
-          client.Connected += (o, e) => logger.LogInformation("client connected.");
-          client.Closed += (o, e) => logger.LogInformation("client closed.");
-          client.Ponged += (o, e) => logger.LogInformation($"pong received ${e.Latency}.");
-          client.Subacked += (o, e) =>
-            logger.LogInformation($"subscription to subject {e.SubjectId} ${(e.Result == 0 ? "not" : string.Empty)} accepted - {e.Message}.");
-          client.Timedout += (o, e) => logger.LogInformation($"server not responding {e.Retries}");
-          await client.RunAsync();
-          await client.SubscribeAsync(2);
-          await client.SubscribeAsync(1);
+            using(var serviceProvider = Bootstrap())
+            using(var scope = serviceProvider.CreateScope())
+            {
+                var scopeServiceProvider = scope.ServiceProvider;
+                var logger = scopeServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
+                var client = scopeServiceProvider.GetRequiredService<IClientSession>();
 
-          Console.ReadKey();
-        }
-        catch (Exception ex)
-        {
-          logger.LogError(ex, "Error");
-        }
-        finally
-        {
-          await client.CloseAsync();
-        }
-      }
+                try
+                {
+                    client.Connected += (o, e) => logger.LogInformation("client connected.");
+                    client.Closed += (o, e) => logger.LogInformation("client closed.");
+                    client.Ponged += (o, e) => logger.LogInformation($"pong received ${e.Packet.Latency}.");
+                    client.Subacked += (o, e) => {
+                        var p = e.Packet;
+                        var message = $"subscription to subject {p.SubjectId} ${(p.Result == 0 ? "not" : string.Empty)} accepted - {p.Message}.";
+                        logger.LogInformation(message);
+                    };
+                    client.Timedout += (o, e) => logger.LogInformation($"server not responding {e.Retries}");
+                    await client.RunAsync();
+                    await client.SubscribeAsync(2);
+                    await client.SubscribeAsync(1);
 
-      Console.ReadKey();
+                    _ = Console.ReadKey();
+                }
+                catch(Exception ex)
+                {
+                    logger.LogError(ex, "Error");
+                }
+                finally
+                {
+                    await client.CloseAsync();
+                }
+            }
+
+            _ = Console.ReadKey();
+        }
+
+        public static ServiceProvider Bootstrap()
+        {
+            var loggerFactory = Helper.ConfigureLogger();
+
+            // initialize DI container
+            return new ServiceCollection()
+                .AddSingleton(loggerFactory)
+                .AddScoped<DefaultSessionOptionProvider>()
+                .AddScoped<Client>()
+                .AddScoped<IClientSession>(sp => sp.GetRequiredService<Client>())
+                .AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>())
+                .AddTransient<ClientChannel>()
+                .AddScoped<Func<IChannelWrapper>>(sp => sp.GetRequiredService<ClientChannel>)
+                .AddScoped<ClientChannelFactory>()
+                .AddScoped<IChannelFactory>(sp => sp.GetRequiredService<ClientChannelFactory>())
+                .BuildServiceProvider();
+        }
+
+        private static void Main() => RunAsync().Wait();
     }
-
-    public static ServiceProvider Bootstrap()
-    {
-      var loggerFactory = Helper.ConfigureLogger();
-
-      // initialize DI container
-      var services = new ServiceCollection();
-      services.AddSingleton(loggerFactory);
-      services.AddScoped<DefaultSessionOptionProvider>();
-      services.AddScoped<Client>();
-      services.AddScoped<IClientSession>(sp => sp.GetRequiredService<Client>());
-      services.AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>());
-      services.AddTransient<ClientChannel>();
-      services.AddScoped<Func<IChannelWrapper>>(sp => sp.GetRequiredService<ClientChannel>);
-      services.AddScoped<ClientChannelFactory>();
-      services.AddScoped<IChannelFactory>(sp => sp.GetRequiredService<ClientChannelFactory>());
-
-      return services.BuildServiceProvider();
-    }
-
-    private static void Main() => RunAsync().Wait();
-  }
 }

@@ -1,6 +1,6 @@
-﻿using DotNetty.Transport.Channels;
+﻿using System;
+
 using Netty.Examples.Common;
-using System;
 
 namespace Netty.Examples.Server
 {
@@ -8,20 +8,17 @@ namespace Netty.Examples.Server
     {
         private readonly Func<IChannelWrapper> _factory;
 
-        public ServerChannelFactory(Func<IChannelWrapper> factory)
-        {
-            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
-        }
+        public ServerChannelFactory(Func<IChannelWrapper> factory) => _factory = factory ?? throw new ArgumentNullException(nameof(factory));
 
         public IChannelWrapper Create(
-            Action<IChannelHandlerContext, ReadIdleStateEvent> clientTimedoutCallback,
-            Action<IChannelHandlerContext, Ping> clientPingCallback,
-            Action<IChannelHandlerContext, Subscribe> clientSubscribingCallback,
-            Action<IChannelHandlerContext> newClientConnectedCallback,
-            Action<IChannelHandlerContext> clientDisconnectedCallback)
+            Action<ReadIdleStateEventArgs> clientTimedoutCallback,
+            Action<NettyPacketEventArgs<Ping>> clientPingCallback,
+            Action<NettyPacketEventArgs<Subscribe>> clientSubscribingCallback,
+            Action<NettyEventArgs> newClientConnectedCallback,
+            Action<NettyEventArgs> clientDisconnectedCallback)
         {
             var c = _factory();
-            if (!(c is ServerChannel channel))
+            if(!(c is ServerChannel channel))
                 return c;
 
             channel.ClientTimedoutCallback = clientTimedoutCallback ?? throw new ArgumentNullException(nameof(clientTimedoutCallback));
@@ -35,11 +32,11 @@ namespace Netty.Examples.Server
         public IChannelWrapper Create()
         {
             return Create(
-                Helper.Nop<IChannelHandlerContext, ReadIdleStateEvent>(),
-                Helper.Nop<IChannelHandlerContext, Ping>(),
-                Helper.Nop<IChannelHandlerContext, Subscribe>(),
-                Helper.Nop<IChannelHandlerContext>(),
-                Helper.Nop<IChannelHandlerContext>());
+                Helper.Nop<ReadIdleStateEventArgs>(),
+                Helper.Nop<NettyPacketEventArgs<Ping>>(),
+                Helper.Nop<NettyPacketEventArgs<Subscribe>>(),
+                Helper.Nop<NettyEventArgs>(),
+                Helper.Nop<NettyEventArgs>());
         }
     }
 }

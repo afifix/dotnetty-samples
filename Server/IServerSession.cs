@@ -1,15 +1,16 @@
-﻿using Netty.Examples.Common;
-using System;
+﻿using System;
+
+using Netty.Examples.Common;
 
 namespace Netty.Examples.Server
 {
     public interface IServerSession : ISession
     {
-        event EventHandler<ReadIdleStateEvent> ClientTimedout;
+        event EventHandler<ReadIdleStateEventArgs> ClientTimedout;
 
-        event EventHandler<Ping> ClientPinged;
+        event EventHandler<PacketEventArgs<Ping>> ClientPinged;
 
-        event EventHandler<Subscribe> ClientSubscribed;
+        event EventHandler<PacketEventArgs<Subscribe>> ClientSubscribed;
 
         event EventHandler NewClientConnected;
 

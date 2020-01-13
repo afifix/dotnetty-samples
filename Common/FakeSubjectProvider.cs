@@ -2,12 +2,12 @@
 
 namespace Netty.Examples.Common
 {
-  public class FakeSubjectProvider : ISubjectProvider
-  {
-    public IList<Subject> Get()
+    public class FakeSubjectProvider : ISubjectProvider
     {
-      return new List<Subject>
-      {
+        public IList<Subject> Get()
+        {
+            return new List<Subject>
+            {
         new Subject
         {
           Id = 1,
@@ -15,6 +15,6 @@ namespace Netty.Examples.Common
           Max = 3
         }
       };
+        }
     }
-  }
 }

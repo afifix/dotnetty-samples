@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Netty.Examples.Common;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+using Netty.Examples.Common;
 
 namespace Netty.Examples.Server
 {
@@ -10,8 +12,8 @@ namespace Netty.Examples.Server
     {
         private static async Task RunAsync()
         {
-            using (var serviceProvider = Bootstrap())
-            using (var scope = serviceProvider.CreateScope())
+            using(var serviceProvider = Bootstrap())
+            using(var scope = serviceProvider.CreateScope())
             {
                 var scopeServiceProvider = scope.ServiceProvider;
                 var logger = scopeServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
@@ -27,9 +29,9 @@ namespace Netty.Examples.Server
                     server.ClientSubscribed += (o, e) => logger.LogInformation("client subscribed");
                     await server.RunAsync();
 
-                    Console.ReadKey();
+                    _ = Console.ReadKey();
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
                     logger.LogError(ex, "Error");
                 }
@@ -39,7 +41,7 @@ namespace Netty.Examples.Server
                 }
             }
 
-            Console.ReadKey();
+            _ = Console.ReadKey();
         }
 
         public static ServiceProvider Bootstrap()
@@ -47,20 +49,19 @@ namespace Netty.Examples.Server
             var loggerFactory = Helper.ConfigureLogger();
 
             // initialize DI container
-            var services = new ServiceCollection();
-            services.AddSingleton(loggerFactory);
-            services.AddScoped<DefaultSessionOptionProvider>();
-            services.AddScoped<FakeSubjectProvider>();
-            services.AddScoped<ISubjectProvider>(sp => sp.GetRequiredService<FakeSubjectProvider>());
-            services.AddScoped<Server>();
-            services.AddScoped<IServerSession>(sp => sp.GetRequiredService<Server>());
-            services.AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>());
-            services.AddTransient<ServerChannel>();
-            services.AddScoped<Func<IChannelWrapper>>(sp => sp.GetRequiredService<ServerChannel>);
-            services.AddScoped<ServerChannelFactory>();
-            services.AddScoped<IChannelFactory>(sp => sp.GetRequiredService<ServerChannelFactory>());
-
-            return services.BuildServiceProvider();
+            return new ServiceCollection()
+               .AddSingleton(loggerFactory)
+               .AddScoped<DefaultSessionOptionProvider>()
+               .AddScoped<FakeSubjectProvider>()
+               .AddScoped<ISubjectProvider>(sp => sp.GetRequiredService<FakeSubjectProvider>())
+               .AddScoped<Server>()
+               .AddScoped<IServerSession>(sp => sp.GetRequiredService<Server>())
+               .AddScoped<ISessionOptionProvider>(sp => sp.GetRequiredService<DefaultSessionOptionProvider>())
+               .AddTransient<ServerChannel>()
+               .AddScoped<Func<IChannelWrapper>>(sp => sp.GetRequiredService<ServerChannel>)
+               .AddScoped<ServerChannelFactory>()
+               .AddScoped<IChannelFactory>(sp => sp.GetRequiredService<ServerChannelFactory>())
+               .BuildServiceProvider();
         }
 
         private static void Main() => RunAsync().Wait();

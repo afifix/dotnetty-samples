@@ -1,6 +1,6 @@
 ﻿namespace Netty.Examples.Common
 {
-  public class SubscribeProcessor : PacketProcessor<Subscribe>
-  {
-  }
+    public class SubscribeProcessor : PacketProcessor<Subscribe>
+    {
+    }
 }

@@ -1,20 +1,22 @@
-﻿using DotNetty.Transport.Channels.Groups;
+﻿using System;
 using System.Threading.Tasks;
+
+using DotNetty.Transport.Channels.Groups;
 
 namespace Netty.Examples.Common
 {
-  public interface IChannelWrapper
-  {
-    bool Active { get; }
+    public interface IChannelWrapper : IDisposable
+    {
+        bool Active { get; }
 
-    Task RunAsync();
+        Task RunAsync();
 
-    Task CloseAsync();
+        Task CloseAsync();
 
-    Task WriteAsync(Packet packet);
+        Task WriteAsync(Packet packet);
 
-    IChannelGroup ChannelGroup { get; }
+        IChannelGroup ChannelGroup { get; }
 
-    IChannelGroup NewChannelGroup();
-  }
+        IChannelGroup NewChannelGroup();
+    }
 }

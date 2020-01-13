@@ -1,7 +1,7 @@
 ﻿namespace Netty.Examples.Common
 {
-  public interface IChannelFactory
-  {
-    IChannelWrapper Create();
-  }
+    public interface IChannelFactory
+    {
+        IChannelWrapper Create();
+    }
 }

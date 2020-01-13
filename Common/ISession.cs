@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace Netty.Examples.Common
 {
-  public interface ISession
-  {
-    event EventHandler Connected;
+    public interface ISession
+    {
+        event EventHandler Connected;
 
-    event EventHandler Closed;
+        event EventHandler Closed;
 
-    Task RunAsync();
+        Task RunAsync();
 
-    Task CloseAsync();
-  }
+        Task CloseAsync();
+    }
 }

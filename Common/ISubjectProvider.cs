@@ -2,8 +2,8 @@
 
 namespace Netty.Examples.Common
 {
-  public interface ISubjectProvider
-  {
-    IList<Subject> Get();
-  }
+    public interface ISubjectProvider
+    {
+        IList<Subject> Get();
+    }
 }

@@ -1,16 +1,18 @@
-﻿using DotNetty.Transport.Channels;
-using DotNetty.Transport.Channels.Groups;
-using Microsoft.Extensions.Logging;
-using Netty.Examples.Common;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using DotNetty.Transport.Channels.Groups;
+
+using Microsoft.Extensions.Logging;
+
+using Netty.Examples.Common;
+
 namespace Netty.Examples.Server
 {
-    public class Server : IServerSession, IDisposable
+    public class Server : IServerSession
     {
         private readonly ILogger<Server> _logger;
         private readonly IChannelFactory _channelFactory;
@@ -35,21 +37,19 @@ namespace Netty.Examples.Server
 
         public event EventHandler Closed;
 
-        public event EventHandler<ReadIdleStateEvent> ClientTimedout;
+        public event EventHandler<ReadIdleStateEventArgs> ClientTimedout;
 
-        public event EventHandler<Ping> ClientPinged;
+        public event EventHandler<PacketEventArgs<Ping>> ClientPinged;
 
-        public event EventHandler<Subscribe> ClientSubscribed;
+        public event EventHandler<PacketEventArgs<Subscribe>> ClientSubscribed;
 
         public event EventHandler NewClientConnected;
 
         public event EventHandler ClientDisconnected;
 
-        public bool Disposed { get; set; }
-
         public async Task RunAsync()
         {
-            if (_channel == null && _channelFactory is ServerChannelFactory factory)
+            if(_channel == null && _channelFactory is ServerChannelFactory factory)
                 _channel = factory.Create(
                     OnClientTimedout,
                     OnClientPinged,
@@ -57,7 +57,7 @@ namespace Netty.Examples.Server
                     OnNewClientConnected,
                     OnClientDisconnected);
 
-            if (_channel == null || _channel.Active)
+            if(_channel == null || _channel.Active)
                 return;
 
             await _channel.RunAsync();
@@ -66,10 +66,10 @@ namespace Netty.Examples.Server
             _groups = null;
             _groups = new ConcurrentDictionary<int, IChannelGroup>();
             _subjects = new ConcurrentDictionary<int, Subject>();
-            foreach (var subject in _subjectProvider.Get())
+            foreach(var subject in _subjectProvider.Get())
             {
-                _groups.TryAdd(subject.Id, _channel.NewChannelGroup());
-                _subjects.TryAdd(subject.Id, subject);
+                _ = _groups.TryAdd(subject.Id, _channel.NewChannelGroup());
+                _ = _subjects.TryAdd(subject.Id, subject);
             }
             _logger.LogTrace("subjects initialized.");
             OnConnected();
@@ -77,7 +77,7 @@ namespace Netty.Examples.Server
 
         public async Task CloseAsync()
         {
-            if (_channel == null || !_channel.Active)
+            if(_channel == null || !_channel.Active)
                 return;
 
             await _channel.CloseAsync();
@@ -92,84 +92,83 @@ namespace Netty.Examples.Server
             OnClosed();
         }
 
-        public async void Dispose()
-        {
-            if (Disposed)
-                return;
+        public int GetTotalConnection() => _channel.ChannelGroup.Count;
 
-            await CloseAsync();
-            Disposed = true;
-        }
-
-        public int GetTotalConnection()
+        internal async void Subscribe(NettyPacketEventArgs<Subscribe> e)
         {
-            return _channel.ChannelGroup.Count;
-        }
-
-        internal async void Subscribe(IChannelHandlerContext ctx, Subscribe e)
-        {
+            var ctx = e.Context;
             var channel = ctx.Channel;
-            if (!_subjects.TryGetValue(e.SubjectId, out var subject))
+            var packet = e.Packet;
+            if(!_subjects.TryGetValue(packet.SubjectId, out var subject))
             {
-                await ctx.WriteAndFlushAsync(Suback.New(e, 0, "subject not found"));
+                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "subject not found"));
                 return;
             }
 
-            if (!_groups.TryGetValue(e.SubjectId, out var group))
+            if(!_groups.TryGetValue(packet.SubjectId, out var group))
             {
                 // should never happen
-                await ctx.WriteAndFlushAsync(Suback.New(e, 0, "group not found"));
+                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "group not found"));
                 return;
             }
 
-            if (subject.Max <= group.Count)
+            if(subject.Max <= group.Count)
             {
                 _logger.LogInformation($"{channel.Id.AsShortText()} not accecpted into subject {subject.Code}");
-                await ctx.WriteAndFlushAsync(Suback.New(e, 0, "subject exceeded the maximum number of connections"));
+                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "subject exceeded the maximum number of connections"));
                 return;
             }
 
             group.Add(ctx.Channel);
             _logger.LogInformation($"{channel.Id.AsShortText()} accecpted into subject {subject.Code}");
-            await ctx.WriteAndFlushAsync(Suback.New(e, 1, $"welcome to {subject.Code}, [{channel.Id}]"));
-            OnClientSubscribed(ctx, e);
+            await ctx.WriteAndFlushAsync(Suback.New(packet, 1, $"welcome to {subject.Code}, [{channel.Id}]"));
+            OnClientSubscribed(packet);
         }
 
-        internal async void OnClientTimedout(IChannelHandlerContext ctx, ReadIdleStateEvent e)
+        internal async void OnClientTimedout(ReadIdleStateEventArgs e)
         {
             _logger.LogTrace("raise `Timedout` event");
-            ThreadPool.QueueUserWorkItem(s => { ClientTimedout?.Invoke(this, e); });
+            _ = ThreadPool.QueueUserWorkItem(s => ClientTimedout?.Invoke(this, e));
 
-            if (!e.MaxRetriesExceeded) return;
+            if(!e.MaxRetriesExceeded)
+                return;
+
+            var ctx = e.Context;
             await ctx.CloseAsync();
         }
 
-        internal async void OnClientPinged(IChannelHandlerContext ctx, Ping e)
+        internal async void OnClientPinged(NettyPacketEventArgs<Ping> e)
         {
             _logger.LogTrace("raise `ping` event");
-            ThreadPool.QueueUserWorkItem(s => { ClientPinged?.Invoke(this, e); });
-            await ctx.WriteAndFlushAsync(Pong.New(e));
+            _ = ThreadPool.QueueUserWorkItem(s => ClientPinged?.Invoke(this, e.ToPacketEventArgs()));
+
+            var ctx = e.Context;
+            await ctx.WriteAndFlushAsync(Pong.New(e.Packet));
         }
 
-        internal void OnClientSubscribed(IChannelHandlerContext ctx, Subscribe e)
+        internal void OnClientSubscribed(Subscribe packet)
         {
             _logger.LogTrace("raise `client subscribed` event");
-            ThreadPool.QueueUserWorkItem(s => { ClientSubscribed?.Invoke(this, e); });
+            _ = ThreadPool.QueueUserWorkItem(s => ClientSubscribed?.Invoke(this, new PacketEventArgs<Subscribe>(packet)));
         }
 
-        internal void OnNewClientConnected(IChannelHandlerContext ctx)
+        internal void OnNewClientConnected(NettyEventArgs e)
         {
             _logger.LogTrace("raise `new client connected` event");
-            ThreadPool.QueueUserWorkItem(s => { NewClientConnected?.Invoke(this, EventArgs.Empty); });
+            _ = ThreadPool.QueueUserWorkItem(s => NewClientConnected?.Invoke(this, EventArgs.Empty));
+
+            var ctx = e.Context;
             var channelId = ctx.Channel.Id;
             _logger.LogInformation(channelId.AsShortText());
             _logger.LogInformation($"total session: {GetTotalConnection()}");
         }
 
-        internal void OnClientDisconnected(IChannelHandlerContext ctx)
+        internal void OnClientDisconnected(NettyEventArgs e)
         {
             _logger.LogTrace("raise `client disconnected` event");
-            ThreadPool.QueueUserWorkItem(s => { ClientDisconnected?.Invoke(this, EventArgs.Empty); });
+            _ = ThreadPool.QueueUserWorkItem(s => ClientDisconnected?.Invoke(this, EventArgs.Empty));
+
+            var ctx = e.Context;
             var channelId = ctx.Channel.Id;
             _logger.LogInformation(channelId.AsShortText());
             _logger.LogInformation($"total session: {GetTotalConnection()}");
@@ -178,13 +177,13 @@ namespace Netty.Examples.Server
         internal void OnConnected()
         {
             _logger.LogTrace("raise `Connected` event");
-            ThreadPool.QueueUserWorkItem(s => { Connected?.Invoke(this, EventArgs.Empty); });
+            _ = ThreadPool.QueueUserWorkItem(s => Connected?.Invoke(this, EventArgs.Empty));
         }
 
         internal void OnClosed()
         {
             _logger.LogTrace("raise `Closed` event");
-            ThreadPool.QueueUserWorkItem(s => { Closed?.Invoke(this, EventArgs.Empty); });
+            _ = ThreadPool.QueueUserWorkItem(s => Closed?.Invoke(this, EventArgs.Empty));
         }
     }
 }

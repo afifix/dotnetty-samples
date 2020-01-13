@@ -2,18 +2,17 @@
 
 namespace Netty.Examples.Common
 {
-  public class DefaultSessionOptionProvider : ISessionOptionProvider
-  {
-    public SessionOption Get()
+    public class DefaultSessionOptionProvider : ISessionOptionProvider
     {
-      return new SessionOption
-      {
-        Host = IPAddress.Parse("127.0.0.1"),
-        Port = 8007,
-        IdleTimeout = 4,
-        KeepAliveInterval = 2,
-        KeepAliveRetries = 3
-      };
+        public SessionOption Get()
+        {
+            return new SessionOption {
+                Host = IPAddress.Parse("127.0.0.1"),
+                Port = 8007,
+                IdleTimeout = 4,
+                KeepAliveInterval = 2,
+                KeepAliveRetries = 3
+            };
+        }
     }
-  }
 }

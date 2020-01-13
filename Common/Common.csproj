@@ -272,17 +272,13 @@
     <Compile Include="ISessionOptionProvider.cs" />
     <Compile Include="KeepMeAliveChannel.cs" />
     <Compile Include="Ping.cs" />
-    <Compile Include="PingProcessor.cs" />
     <Compile Include="Pong.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="PacketDecoder.cs" />
     <Compile Include="PacketEncoder.cs" />
     <Compile Include="SessionOption.cs" />
     <Compile Include="Suback.cs" />
-    <Compile Include="SubackProcessor.cs" />
     <Compile Include="Subject.cs" />
-    <Compile Include="SubscribeProcessor.cs" />
-    <Compile Include="PongProcessor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReadIdleStateEventArgs.cs" />
     <Compile Include="ReadIdleStateHandler.cs" />

@@ -78,12 +78,16 @@ namespace Netty.Examples.Server
                 var sessionChannelHandler = new SessionChannelHandler();
                 sessionChannelHandler.Activated += (o, e) => NewClientConnectedCallback?.Invoke(e);
                 sessionChannelHandler.Inactivated += (o, e) => ClientDisconnectedCallback?.Invoke(e);
-                var pingProcessor = new PingProcessor();
+
+                var pingProcessor = new PacketProcessor<Ping>();
                 pingProcessor.Reading += (o, e) => ClientPingCallback?.Invoke(e);
+
+                var subscribeProcessor = new PacketProcessor<Subscribe>();
+                subscribeProcessor.Reading += (o, e) => ClientSubscribeCallback?.Invoke(e);
+
                 var timeoutHandler = new TimeoutHandler();
                 timeoutHandler.Timedout += (o, e) => ClientTimedoutCallback?.Invoke(e);
-                var subscribeProcessor = new SubscribeProcessor();
-                subscribeProcessor.Reading += (o, e) => ClientSubscribeCallback?.Invoke(e);
+
 
                 _eventLoopParent = new MultithreadEventLoopGroup(1);
                 _eventLoopChild = new MultithreadEventLoopGroup();

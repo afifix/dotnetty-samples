@@ -5,7 +5,7 @@ using DotNetty.Transport.Channels;
 
 namespace Netty.Examples.Common
 {
-    public abstract class PacketProcessor<T> : SimpleChannelInboundHandler<T>
+    public class PacketProcessor<T> : SimpleChannelInboundHandler<T>
         where T : Packet
     {
         protected static readonly IInternalLogger Logger = InternalLoggerFactory.GetInstance<T>();

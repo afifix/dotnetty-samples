@@ -56,11 +56,11 @@ namespace Netty.Examples.Client
             _channel = null;
             _eventLoop = null;
 
-            var subackProcessor = new SubackProcessor();
-            subackProcessor.Reading += (o, e) => SubackCallback?.Invoke(e.Packet);
-
-            var pongProcessor = new PongProcessor();
+            var pongProcessor = new PacketProcessor<Pong>();
             pongProcessor.Reading += (o, e) => PongCallback?.Invoke(e.Packet);
+
+            var subackProcessor = new PacketProcessor<Suback>();
+            subackProcessor.Reading += (o, e) => SubackCallback?.Invoke(e.Packet);
 
             var clientHandler = new SessionChannelHandler();
             clientHandler.Connected += (o, e) => ConnectedCallback?.Invoke();

@@ -10,6 +10,7 @@ namespace Netty.Examples.Common
         {
             return new Subscribe {
                 Id = Guid.NewGuid(),
+                Type = PacketType.SUBREQ,
                 Time = TimeUtil.GetSystemTime(),
                 SubjectId = subjectId
             };

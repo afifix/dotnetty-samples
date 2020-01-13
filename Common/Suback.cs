@@ -10,6 +10,7 @@ namespace Netty.Examples.Common
         {
             return new Suback {
                 Id = Guid.NewGuid(),
+                Type = PacketType.SUBACK,
                 RequestId = packet.Id,
                 SubjectId = packet.SubjectId,
                 Time = TimeUtil.GetSystemTime(),

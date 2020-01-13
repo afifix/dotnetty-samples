@@ -6,8 +6,8 @@ namespace Netty.Examples.Common
     {
         PINGREQ,
         PINGRESP,
-        LICREQ,
-        LICRESP,
+        SUBREQ,
+        SUBACK,
     }
 
     public abstract class Packet

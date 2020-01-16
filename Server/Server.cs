@@ -88,7 +88,6 @@ namespace Netty.Examples.Server
             _subjects = null;
             _groups = null;
             _channel = null;
-
             OnClosed();
         }
 
@@ -160,18 +159,14 @@ namespace Netty.Examples.Server
             var ctx = e.Context;
             var channelId = ctx.Channel.Id;
             _logger.LogInformation(channelId.AsShortText());
-            _logger.LogInformation($"total session: {GetTotalConnection()}");
+            _logger.LogInformation($"total active sessions: {GetTotalConnection()}");
         }
 
         internal void OnClientDisconnected(NettyEventArgs e)
         {
             _logger.LogTrace("raise `client disconnected` event");
             _ = ThreadPool.QueueUserWorkItem(s => ClientDisconnected?.Invoke(this, EventArgs.Empty));
-
-            var ctx = e.Context;
-            var channelId = ctx.Channel.Id;
-            _logger.LogInformation(channelId.AsShortText());
-            _logger.LogInformation($"total session: {GetTotalConnection()}");
+            _logger.LogInformation($"total active sessions: {GetTotalConnection()}");
         }
 
         internal void OnConnected()

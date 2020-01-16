@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
-using DotNetty.Transport.Channels.Groups;
 using DotNetty.Transport.Channels.Sockets;
 
 using Microsoft.Extensions.Logging;
@@ -12,16 +11,12 @@ using Netty.Examples.Common;
 
 namespace Netty.Examples.Client
 {
-    public class ClientChannel : IChannelWrapper
+    public class ClientChannel : BaseChannelWrapper
     {
         private readonly ILogger<ClientChannel> _logger;
         private readonly SessionOption _option;
 
-        private IChannel _channel;
         private IEventLoopGroup _eventLoop;
-        private bool _connecting;
-        private bool _closing;
-        private bool _disposed;
 
         public ClientChannel(
           ILoggerFactory loggerFactory,
@@ -30,9 +25,6 @@ namespace Netty.Examples.Client
             _option = sessionOptionProvider?.Get() ?? throw new ArgumentNullException(nameof(sessionOptionProvider));
             _logger = loggerFactory?.CreateLogger<ClientChannel>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
-
-
-        public bool Active => _channel?.Active ?? false;
 
         internal Action<ReadIdleStateEventArgs> TimeoutCallback { get; set; }
 
@@ -44,7 +36,7 @@ namespace Netty.Examples.Client
 
         internal Action<Suback> SubackCallback { get; set; }
 
-        public async Task RunAsync()
+        public override async Task RunAsync()
         {
             if(_connecting || _closing)
                 return;
@@ -62,9 +54,11 @@ namespace Netty.Examples.Client
             var subackProcessor = new PacketProcessor<Suback>();
             subackProcessor.Reading += (o, e) => SubackCallback?.Invoke(e.Packet);
 
-            var clientHandler = new SessionChannelHandler();
-            clientHandler.Connected += (o, e) => ConnectedCallback?.Invoke();
-            clientHandler.Closed += (o, e) => ClosedCallback?.Invoke();
+            var sessionChannelHandler = new SessionChannelHandler();
+            sessionChannelHandler.Connected += (o, e) => ConnectedCallback?.Invoke();
+            sessionChannelHandler.Closed += (o, e) => ClosedCallback?.Invoke();
+            // close the channel if not active anymore
+            sessionChannelHandler.Inactivated += async (o, e) => await CloseAsync();
 
             var timedoutHandler = new TimeoutHandler();
             timedoutHandler.Timedout += (o, e) => TimeoutCallback?.Invoke(e);
@@ -85,7 +79,7 @@ namespace Netty.Examples.Client
                           .AddLast("pong", pongProcessor)
                           .AddLast("suback", subackProcessor)
                           .AddLast("timeout", timedoutHandler)
-                          .AddLast("client", clientHandler);
+                          .AddLast("client", sessionChannelHandler);
                   }));
 
                 _channel = await bootstrap.ConnectAsync(_option.Host, _option.Port);
@@ -97,20 +91,12 @@ namespace Netty.Examples.Client
             }
         }
 
-        public async Task CloseAsync()
+        public override async Task CloseAsync()
         {
             if(_closing || _channel == null)
                 return;
 
             _closing = true;
-
-            if(!_channel.Active)
-            {
-                _channel = null;
-                _eventLoop = null;
-                _closing = false;
-                return;
-            }
 
             try
             {
@@ -126,43 +112,10 @@ namespace Netty.Examples.Client
             }
         }
 
-        public async Task WriteAsync(Packet packet)
+        protected override void Dispose(bool disposing)
         {
-            if(_channel == null || !_channel.Active || _closing || _connecting || _disposed)
-                return;
-
-            await _channel.WriteAndFlushAsync(packet);
-        }
-
-        public IChannelGroup ChannelGroup { get; }
-
-        public IChannelGroup NewChannelGroup() => throw new NotImplementedException();
-
-#pragma warning disable CA1063 // Implement IDisposable Correctly
-        public void Dispose()
-        {
-            if(_disposed)
-                return;
-
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual async void Dispose(bool disposing)
-        {
-            if(_disposed)
-                return;
-
-            if(disposing)
-                await CloseAsync();
-
-            _disposed = true;
+            base.Dispose(disposing);
             _logger.LogTrace("disposed.");
-        }
-
-        ~ClientChannel()
-        {
-            Dispose(false);
         }
     }
 }

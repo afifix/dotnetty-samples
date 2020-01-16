@@ -257,6 +257,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseChannelWrapper.cs" />
     <Compile Include="FakeSubjectProvider.cs" />
     <Compile Include="ISubjectProvider.cs" />
     <Compile Include="NettyEventArgs.cs" />

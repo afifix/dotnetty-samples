@@ -12,19 +12,13 @@ using Netty.Examples.Common;
 
 namespace Netty.Examples.Server
 {
-    public class ServerChannel : IChannelWrapper
+    public class ServerChannel : BaseChannelWrapper
     {
-        private IChannel _channel;
-        private IEventLoopGroup _eventLoopParent;
-        private IEventLoopGroup _eventLoopChild;
-
-        private bool _closing;
-        private bool _connecting;
-
         private readonly SessionOption _option;
         private readonly ILogger<ServerChannel> _logger;
 
-        private bool _disposed;
+        private IEventLoopGroup _eventLoopParent;
+        private IEventLoopGroup _eventLoopChild;
 
         internal Action<NettyEventArgs> NewClientConnectedCallback { get; set; }
         internal Action<NettyEventArgs> ClientDisconnectedCallback { get; set; }
@@ -42,20 +36,7 @@ namespace Netty.Examples.Server
             _option = sessionOptionProvider?.Get() ?? throw new ArgumentNullException(nameof(sessionOptionProvider));
         }
 
-        public bool Active => _channel?.Active ?? false;
-
-        public IChannelGroup ChannelGroup { get; private set; }
-
-        public IChannelGroup NewChannelGroup()
-        {
-            if(_channel == null || !_channel.Active)
-                throw new ApplicationException("server not running.");
-
-            var executor = _channel.Pipeline.FirstContext().Executor;
-            return new DefaultChannelGroup(executor);
-        }
-
-        public async Task RunAsync()
+        public override async Task RunAsync()
         {
             if(_connecting || _closing)
                 return;
@@ -75,9 +56,9 @@ namespace Netty.Examples.Server
 
             try
             {
-                var sessionChannelHandler = new SessionChannelHandler();
-                sessionChannelHandler.Activated += (o, e) => NewClientConnectedCallback?.Invoke(e);
-                sessionChannelHandler.Inactivated += (o, e) => ClientDisconnectedCallback?.Invoke(e);
+                var clientSessionChannelHandler = new SessionChannelHandler();
+                clientSessionChannelHandler.Activated += (o, e) => NewClientConnectedCallback?.Invoke(e);
+                clientSessionChannelHandler.Inactivated += (o, e) => ClientDisconnectedCallback?.Invoke(e);
 
                 var pingProcessor = new PacketProcessor<Ping>();
                 pingProcessor.Reading += (o, e) => ClientPingCallback?.Invoke(e);
@@ -101,7 +82,7 @@ namespace Netty.Examples.Server
                             .AddLast("encoder", new PacketEncoder())
                             .AddLast("decoder", new PacketDecoder())
                             .AddLast("idle", new ReadIdleStateHandler(5, 3))
-                            .AddLast("server", sessionChannelHandler)
+                            .AddLast("server", clientSessionChannelHandler)
                             .AddLast("ping", pingProcessor)
                             .AddLast("subscribe", subscribeProcessor)
                             .AddLast("timeout", timeoutHandler);
@@ -121,15 +102,7 @@ namespace Netty.Examples.Server
             }
         }
 
-        public async Task WriteAsync(Packet packet)
-        {
-            if(_channel == null || !_channel.Active || _closing || _connecting || _disposed)
-                return;
-
-            await _channel.WriteAndFlushAsync(packet);
-        }
-
-        public async Task CloseAsync()
+        public override async Task CloseAsync()
         {
             if(_closing || _channel == null)
                 return;
@@ -138,17 +111,20 @@ namespace Netty.Examples.Server
 
             try
             {
+                // close all active sessions
+                await ChannelGroup.CloseAsync();
+                // disconnect the server
+                await _channel.DisconnectAsync();
+                // shutdown eventloops
                 await Task.WhenAll(
                     _eventLoopParent.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)),
                     _eventLoopChild.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
-
-                await ChannelGroup.CloseAsync();
 
                 _channel = null;
                 ChannelGroup = null;
                 _eventLoopParent = null;
                 _eventLoopChild = null;
-                _logger.LogTrace("closed.");
+                _logger.LogInformation("closed.");
             }
             finally
             {
@@ -156,31 +132,10 @@ namespace Netty.Examples.Server
             }
         }
 
-#pragma warning disable CA1063 // Implement IDisposable Correctly
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if(_disposed)
-                return;
-
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual async void Dispose(bool disposing)
-        {
-            if(_disposed)
-                return;
-
-            if(disposing)
-                await CloseAsync();
-
-            _disposed = true;
+            base.Dispose(disposing);
             _logger.LogTrace("disposed.");
-        }
-
-        ~ServerChannel()
-        {
-            Dispose(false);
         }
     }
 }

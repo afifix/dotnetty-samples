@@ -17,7 +17,7 @@ namespace Netty.Examples.Common
         {
             // configure Serilog
             Log.Logger = new LoggerConfiguration()
-              .MinimumLevel.Information() // set debug as minimum level for Serilog
+              .MinimumLevel.Verbose() // set minimum level for Serilog
               .Enrich.FromLogContext()
               .WriteTo.Console(outputTemplate: Template)
               .CreateLogger();
@@ -34,24 +34,12 @@ namespace Netty.Examples.Common
         public static void BuildLoggerFactory(ILoggingBuilder builder)
         {
             // configure providers
-            builder.AddSerilog(dispose: true);
-            // configure minimum level
-            builder.SetMinimumLevel(LogLevel.Trace);
+            _ = builder.AddSerilog(dispose: true)
+                    .SetMinimumLevel(LogLevel.Trace);
         }
 
-        public static Action<T1, T2> Nop<T1, T2>()
-        {
-            return (x, y) => { };
-        }
+        public static Action<T1> Nop<T1>() => x => { };
 
-        public static Action<T1> Nop<T1>()
-        {
-            return x => { };
-        }
-
-        public static Action Nop()
-        {
-            return () => { };
-        }
+        public static Action Nop() => () => { };
     }
 }

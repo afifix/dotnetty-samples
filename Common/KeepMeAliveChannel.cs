@@ -5,6 +5,8 @@ using DotNetty.Common.Internal.Logging;
 using DotNetty.Common.Utilities;
 using DotNetty.Transport.Channels;
 
+using Netty.Examples.Common.Packets;
+
 namespace Netty.Examples.Common
 {
     public class KeepMeAliveChannel : ChannelHandlerAdapter
@@ -132,7 +134,7 @@ namespace Netty.Examples.Common
             _destroyed = true;
             if(KeepAliveScheduledTask == null)
                 return;
-            KeepAliveScheduledTask.Cancel();
+            _ = KeepAliveScheduledTask.Cancel();
             KeepAliveScheduledTask = null;
         }
 

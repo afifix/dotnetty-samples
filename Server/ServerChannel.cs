@@ -9,6 +9,7 @@ using DotNetty.Transport.Channels.Sockets;
 using Microsoft.Extensions.Logging;
 
 using Netty.Examples.Common;
+using Netty.Examples.Common.Packets;
 
 namespace Netty.Examples.Server
 {
@@ -69,7 +70,6 @@ namespace Netty.Examples.Server
                 var timeoutHandler = new TimeoutHandler();
                 timeoutHandler.Timedout += (o, e) => ClientTimedoutCallback?.Invoke(e);
 
-
                 _eventLoopParent = new MultithreadEventLoopGroup(1);
                 _eventLoopChild = new MultithreadEventLoopGroup();
 
@@ -111,6 +111,9 @@ namespace Netty.Examples.Server
 
             try
             {
+                if(_eventLoopParent.IsShuttingDown || _eventLoopParent.IsShuttingDown)
+                    return;
+
                 // close all active sessions
                 await ChannelGroup.CloseAsync();
                 // disconnect the server
@@ -120,15 +123,15 @@ namespace Netty.Examples.Server
                     _eventLoopParent.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)),
                     _eventLoopChild.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
 
-                _channel = null;
-                ChannelGroup = null;
-                _eventLoopParent = null;
-                _eventLoopChild = null;
                 _logger.LogInformation("closed.");
             }
             finally
             {
                 _closing = false;
+                _channel = null;
+                ChannelGroup = null;
+                _eventLoopParent = null;
+                _eventLoopChild = null;
             }
         }
 

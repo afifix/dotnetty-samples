@@ -9,6 +9,7 @@ using DotNetty.Transport.Channels.Groups;
 using Microsoft.Extensions.Logging;
 
 using Netty.Examples.Common;
+using Netty.Examples.Common.Packets;
 
 namespace Netty.Examples.Server
 {

@@ -1,6 +1,7 @@
 ﻿using System;
 
 using Netty.Examples.Common;
+using Netty.Examples.Common.Packets;
 
 namespace Netty.Examples.Client
 {
@@ -26,7 +27,7 @@ namespace Netty.Examples.Client
 
             channel.ConnectedCallback = connectedCallback ?? throw new ArgumentNullException(nameof(connectedCallback));
             channel.ClosedCallback = closedCallback ?? throw new ArgumentNullException(nameof(closedCallback));
-            channel.PongCallback = pongCallback ?? throw new ArgumentNullException(nameof(pongCallback));
+            channel.PingResponseCallback = pongCallback ?? throw new ArgumentNullException(nameof(pongCallback));
             channel.TimeoutCallback = timeoutCallback ?? throw new ArgumentNullException(nameof(timeoutCallback));
             channel.SubackCallback = subackCallback ?? throw new ArgumentNullException(nameof(subackCallback));
             return c;

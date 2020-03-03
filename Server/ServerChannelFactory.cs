@@ -1,6 +1,7 @@
 ﻿using System;
 
 using Netty.Examples.Common;
+using Netty.Examples.Common.Packets;
 
 namespace Netty.Examples.Server
 {

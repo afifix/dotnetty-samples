@@ -3,6 +3,8 @@
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 
+using Netty.Examples.Common.Packets;
+
 namespace Netty.Examples.Common
 {
     public class PacketProcessor<T> : SimpleChannelInboundHandler<T>

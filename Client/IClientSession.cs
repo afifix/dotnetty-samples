@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 
 using Netty.Examples.Common;
+using Netty.Examples.Common.Packets;
 
 namespace Netty.Examples.Client
 {

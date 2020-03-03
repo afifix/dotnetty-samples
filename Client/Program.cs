@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,7 @@ namespace Netty.Examples.Client
                 {
                     client.Connected += (o, e) => logger.LogInformation("client connected.");
                     client.Closed += (o, e) => logger.LogInformation("client closed.");
-                    client.Ponged += (o, e) => logger.LogInformation($"pong received ${e.Packet.Latency}.");
+                    client.Ponged += (o, e) => logger.LogInformation($"ping response received ${e.Packet.Latency}.");
                     client.Subacked += (o, e) => {
                         var p = e.Packet;
                         var message = $"subscription to subject {p.SubjectId} ${(p.Result == 0 ? "not" : string.Empty)} accepted - {p.Message}.";
@@ -34,7 +35,11 @@ namespace Netty.Examples.Client
                     await client.SubscribeAsync(2);
                     await client.SubscribeAsync(1);
 
-                    _ = Console.ReadKey();
+                    //_ = Console.ReadKey();
+                    while(true)
+                    {
+                        Thread.Sleep(5000);
+                    }
                 }
                 catch(Exception ex)
                 {

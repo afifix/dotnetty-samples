@@ -2,7 +2,7 @@
 
 using DotNetty.Common.Utilities;
 
-namespace Netty.Examples.Common
+namespace Netty.Examples.Common.Packets
 {
     public class Pong : Packet
     {

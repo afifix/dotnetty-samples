@@ -6,6 +6,8 @@ using DotNetty.Codecs;
 using DotNetty.Common.Internal.Logging;
 using DotNetty.Transport.Channels;
 
+using Netty.Examples.Common.Packets;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 

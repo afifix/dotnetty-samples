@@ -17,7 +17,7 @@ namespace Netty.Examples.Common
         {
             // configure Serilog
             Log.Logger = new LoggerConfiguration()
-              .MinimumLevel.Verbose() // set minimum level for Serilog
+              .MinimumLevel.Debug() // set minimum level for Serilog
               .Enrich.FromLogContext()
               .WriteTo.Console(outputTemplate: Template)
               .CreateLogger();

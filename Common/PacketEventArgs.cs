@@ -1,5 +1,7 @@
 ﻿using System;
 
+using Netty.Examples.Common.Packets;
+
 namespace Netty.Examples.Common
 {
     public class PacketEventArgs<T> : EventArgs

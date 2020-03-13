@@ -64,6 +64,11 @@ namespace Netty.Examples.Server
                .BuildServiceProvider();
         }
 
-        private static void Main() => RunAsync().Wait();
+        private static void Main()
+        {
+            Console.Title = "Server";
+            RunAsync().Wait();
+        }
+
     }
 }

@@ -27,15 +27,15 @@ namespace Netty.Examples.Client
             _logger = loggerFactory?.CreateLogger<ClientChannel>() ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        internal Action<ReadIdleStateEventArgs> TimeoutCallback { get; set; }
+        internal Action<ReadIdleStateEventArgs> TimedoutCallback { get; set; }
 
-        internal Action<Pong> PingResponseCallback { get; set; }
+        internal Action<Pong> PingResponseReceivedCallback { get; set; }
 
         internal Action ConnectedCallback { get; set; }
 
         internal Action ClosedCallback { get; set; }
 
-        internal Action<Suback> SubackCallback { get; set; }
+        internal Action<Suback> SubackReceivedCallback { get; set; }
 
         public override async Task RunAsync()
         {
@@ -48,17 +48,17 @@ namespace Netty.Examples.Client
             _connecting = true;
 
             var pingResponseProcessor = new PacketProcessor<Pong>();
-            pingResponseProcessor.Reading += (o, e) => PingResponseCallback?.Invoke(e.Packet);
+            pingResponseProcessor.Reading += (o, e) => PingResponseReceivedCallback?.Invoke(e.Packet);
 
             var subackProcessor = new PacketProcessor<Suback>();
-            subackProcessor.Reading += (o, e) => SubackCallback?.Invoke(e.Packet);
+            subackProcessor.Reading += (o, e) => SubackReceivedCallback?.Invoke(e.Packet);
 
             var sessionChannelHandler = new SessionChannelHandler();
-            sessionChannelHandler.Closed += async (o, e) => await CloseAsync();
-            sessionChannelHandler.Inactivated += async (o, e) => await CloseAsync();
+            sessionChannelHandler.Closed += async (o, e) => await CloseAsync().ConfigureAwait(false);
+            sessionChannelHandler.Inactivated += async (o, e) => await CloseAsync().ConfigureAwait(false);
 
             var timedoutHandler = new TimeoutHandler();
-            timedoutHandler.Timedout += (o, e) => TimeoutCallback?.Invoke(e);
+            timedoutHandler.Timedout += (o, e) => TimedoutCallback?.Invoke(e);
 
             try
             {
@@ -67,19 +67,20 @@ namespace Netty.Examples.Client
                   .Group(_eventLoop)
                   .Channel<TcpSocketChannel>()
                   .Option(ChannelOption.TcpNodelay, true)
+                  .Option(ChannelOption.ConnectTimeout, TimeSpan.FromMilliseconds(2000))
                   .Handler(new ActionChannelInitializer<ISocketChannel>(channel => {
                       _ = channel.Pipeline
                           .AddLast("encoder", new PacketEncoder())
                           .AddLast("decoder", new PacketDecoder())
                           .AddLast("keep-alive", new KeepMeAliveChannel(_option.KeepAliveInterval))
                           .AddLast("idle", new ReadIdleStateHandler(_option.IdleTimeout, _option.KeepAliveRetries))
-                          .AddLast("pong", pingResponseProcessor)
+                          .AddLast("ping-response", pingResponseProcessor)
                           .AddLast("suback", subackProcessor)
                           .AddLast("timeout", timedoutHandler)
                           .AddLast("client", sessionChannelHandler);
                   }));
 
-                _channel = await bootstrap.ConnectAsync(_option.Host, _option.Port);
+                _channel = await bootstrap.ConnectAsync(_option.Host, _option.Port).ConfigureAwait(false);
                 ConnectedCallback?.Invoke();
                 _logger.LogTrace("connected.");
             }
@@ -106,8 +107,8 @@ namespace Netty.Examples.Client
                 if(_eventLoop.IsShutdown || _eventLoop.IsShuttingDown)
                     return;
 
-                await _channel.CloseAsync();
-                await _eventLoop.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1));
+                await _channel.CloseAsync().ConfigureAwait(false);
+                await _eventLoop.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)).ConfigureAwait(false);
                 _logger.LogTrace("closed.");
                 ClosedCallback();
             }

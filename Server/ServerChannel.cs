@@ -51,7 +51,7 @@ namespace Netty.Examples.Server
             _eventLoopParent = null;
             if(ChannelGroup != null)
             {
-                await ChannelGroup.CloseAsync();
+                await ChannelGroup.CloseAsync().ConfigureAwait(false);
                 ChannelGroup = null;
             }
 
@@ -90,7 +90,7 @@ namespace Netty.Examples.Server
                         ChannelGroup.Add(channel);
                     }));
 
-                _channel = await bootstrap.BindAsync(_option.Port);
+                _channel = await bootstrap.BindAsync(_option.Port).ConfigureAwait(false);
                 var executor = _channel.Pipeline.FirstContext().Executor;
                 ChannelGroup = new DefaultChannelGroup("clients", executor);
 
@@ -115,15 +115,20 @@ namespace Netty.Examples.Server
                     return;
 
                 // close all active sessions
-                await ChannelGroup.CloseAsync();
+                await ChannelGroup.CloseAsync().ConfigureAwait(false);
                 // disconnect the server
-                await _channel.DisconnectAsync();
+                await _channel.DisconnectAsync().ConfigureAwait(false);
                 // shutdown eventloops
                 await Task.WhenAll(
                     _eventLoopParent.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)),
-                    _eventLoopChild.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1)));
+                    _eventLoopChild.ShutdownGracefullyAsync(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(1))).ConfigureAwait(false);
 
                 _logger.LogInformation("closed.");
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                throw ex;
             }
             finally
             {

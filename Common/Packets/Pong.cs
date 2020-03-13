@@ -12,6 +12,7 @@ namespace Netty.Examples.Common.Packets
         {
             if(ping == null)
                 throw new ArgumentNullException(nameof(ping));
+
             var time = TimeUtil.GetSystemTime();
             return new Pong {
                 Id = Guid.NewGuid(),

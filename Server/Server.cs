@@ -61,7 +61,7 @@ namespace Netty.Examples.Server
             if(_channel == null || _channel.Active)
                 return;
 
-            await _channel.RunAsync();
+            await _channel.RunAsync().ConfigureAwait(false);
 
             _subjects = null;
             _groups = null;
@@ -81,10 +81,10 @@ namespace Netty.Examples.Server
             if(_channel == null || !_channel.Active)
                 return;
 
-            await _channel.CloseAsync();
+            await _channel.CloseAsync().ConfigureAwait(false);
 
             var tasks = _groups.Values.Select(x => x.CloseAsync());
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
 
             _subjects = null;
             _groups = null;
@@ -101,27 +101,27 @@ namespace Netty.Examples.Server
             var packet = e.Packet;
             if(!_subjects.TryGetValue(packet.SubjectId, out var subject))
             {
-                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "subject not found"));
+                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "subject not found")).ConfigureAwait(false);
                 return;
             }
 
             if(!_groups.TryGetValue(packet.SubjectId, out var group))
             {
                 // should never happen
-                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "group not found"));
+                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "group not found")).ConfigureAwait(false);
                 return;
             }
 
             if(subject.Max <= group.Count)
             {
                 _logger.LogInformation($"{channel.Id.AsShortText()} not accecpted into subject {subject.Code}");
-                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "subject exceeded the maximum number of connections"));
+                await ctx.WriteAndFlushAsync(Suback.New(packet, 0, "subject exceeded the maximum number of connections")).ConfigureAwait(false);
                 return;
             }
 
             group.Add(ctx.Channel);
             _logger.LogInformation($"{channel.Id.AsShortText()} accecpted into subject {subject.Code}");
-            await ctx.WriteAndFlushAsync(Suback.New(packet, 1, $"welcome to {subject.Code}, [{channel.Id}]"));
+            await ctx.WriteAndFlushAsync(Suback.New(packet, 1, $"welcome to {subject.Code}, [{channel.Id}]")).ConfigureAwait(false);
             OnClientSubscribed(packet);
         }
 
@@ -134,7 +134,7 @@ namespace Netty.Examples.Server
                 return;
 
             var ctx = e.Context;
-            await ctx.CloseAsync();
+            await ctx.CloseAsync().ConfigureAwait(false);
         }
 
         internal async void OnClientPinged(NettyPacketEventArgs<Ping> e)
@@ -143,7 +143,7 @@ namespace Netty.Examples.Server
             _ = ThreadPool.QueueUserWorkItem(s => ClientPinged?.Invoke(this, e.ToPacketEventArgs()));
 
             var ctx = e.Context;
-            await ctx.WriteAndFlushAsync(Pong.New(e.Packet));
+            await ctx.WriteAndFlushAsync(Pong.New(e.Packet)).ConfigureAwait(false);
         }
 
         internal void OnClientSubscribed(Subscribe packet)

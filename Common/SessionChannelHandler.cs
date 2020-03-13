@@ -44,7 +44,7 @@ namespace Netty.Examples.Common
         {
             Logger.Trace("connect async");
             _ = ThreadPool.QueueUserWorkItem(s => Connected?.Invoke(this, new NettyEventArgs(context)));
-            await base.ConnectAsync(context, remoteAddress, localAddress);
+            await base.ConnectAsync(context, remoteAddress, localAddress).ConfigureAwait(false);
         }
 
         public override void ChannelInactive(IChannelHandlerContext context)
@@ -65,21 +65,21 @@ namespace Netty.Examples.Common
         {
             Logger.Trace("channel deregistred");
             _ = ThreadPool.QueueUserWorkItem(s => Deregistred?.Invoke(this, new NettyEventArgs(context)));
-            await base.DeregisterAsync(context);
+            await base.DeregisterAsync(context).ConfigureAwait(false);
         }
 
         public override async Task DisconnectAsync(IChannelHandlerContext context)
         {
             Logger.Trace("disconnect async");
             _ = ThreadPool.QueueUserWorkItem(s => Disconnected?.Invoke(this, new NettyEventArgs(context)));
-            await base.DisconnectAsync(context);
+            await base.DisconnectAsync(context).ConfigureAwait(false);
         }
 
         public override async Task CloseAsync(IChannelHandlerContext context)
         {
             Logger.Trace("close async");
             _ = ThreadPool.QueueUserWorkItem(s => Closed?.Invoke(this, new NettyEventArgs(context)));
-            await base.CloseAsync(context);
+            await base.CloseAsync(context).ConfigureAwait(false);
         }
 
         public override void ChannelRead(IChannelHandlerContext context, object message)
@@ -93,7 +93,7 @@ namespace Netty.Examples.Common
         {
             Logger.Trace("write async");
             _ = ThreadPool.QueueUserWorkItem(s => Writing?.Invoke(this, new NettyEventArgs(context)));
-            await base.WriteAsync(context, message);
+            await base.WriteAsync(context, message).ConfigureAwait(false);
         }
 
         public override void ExceptionCaught(IChannelHandlerContext ctx, Exception e)

@@ -27,9 +27,9 @@ namespace Netty.Examples.Client
 
             channel.ConnectedCallback = connectedCallback ?? throw new ArgumentNullException(nameof(connectedCallback));
             channel.ClosedCallback = closedCallback ?? throw new ArgumentNullException(nameof(closedCallback));
-            channel.PingResponseCallback = pongCallback ?? throw new ArgumentNullException(nameof(pongCallback));
-            channel.TimeoutCallback = timeoutCallback ?? throw new ArgumentNullException(nameof(timeoutCallback));
-            channel.SubackCallback = subackCallback ?? throw new ArgumentNullException(nameof(subackCallback));
+            channel.PingResponseReceivedCallback = pongCallback ?? throw new ArgumentNullException(nameof(pongCallback));
+            channel.TimedoutCallback = timeoutCallback ?? throw new ArgumentNullException(nameof(timeoutCallback));
+            channel.SubackReceivedCallback = subackCallback ?? throw new ArgumentNullException(nameof(subackCallback));
             return c;
         }
 

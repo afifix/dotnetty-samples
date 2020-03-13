@@ -166,7 +166,7 @@ namespace Netty.Examples.Common
             // send a PINGREQ only if channel is not active
             if(!self.Reading && nextDelay.Ticks <= 0)
             {
-                await ctx.WriteAndFlushAsync(Ping.New());
+                await ctx.WriteAndFlushAsync(Ping.New()).ConfigureAwait(false);
                 // reset delay
                 nextDelay = self.KeepAliveInterval;
             }

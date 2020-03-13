@@ -10,9 +10,9 @@ namespace Netty.Examples.Client
     {
         event EventHandler<ReadIdleStateEventArgs> Timedout;
 
-        event EventHandler<PacketEventArgs<Pong>> Ponged;
+        event EventHandler<PacketEventArgs<Pong>> PingResponseReceived;
 
-        event EventHandler<PacketEventArgs<Suback>> Subacked;
+        event EventHandler<PacketEventArgs<Suback>> SubackReceived;
 
         Task SubscribeAsync(int id);
     }

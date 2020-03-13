@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -24,8 +23,8 @@ namespace Netty.Examples.Client
                 {
                     client.Connected += (o, e) => logger.LogInformation("client connected.");
                     client.Closed += (o, e) => logger.LogInformation("client closed.");
-                    client.Ponged += (o, e) => logger.LogInformation($"ping response received ${e.Packet.Latency}.");
-                    client.Subacked += (o, e) => {
+                    client.PingResponseReceived += (o, e) => logger.LogInformation($"ping replay ${e.Packet.Latency}.");
+                    client.SubackReceived += (o, e) => {
                         var p = e.Packet;
                         var message = $"subscription to subject {p.SubjectId} ${(p.Result == 0 ? "not" : string.Empty)} accepted - {p.Message}.";
                         logger.LogInformation(message);
@@ -35,11 +34,7 @@ namespace Netty.Examples.Client
                     await client.SubscribeAsync(2);
                     await client.SubscribeAsync(1);
 
-                    //_ = Console.ReadKey();
-                    while(true)
-                    {
-                        Thread.Sleep(5000);
-                    }
+                    _ = Console.ReadKey();
                 }
                 catch(Exception ex)
                 {
@@ -72,6 +67,10 @@ namespace Netty.Examples.Client
                 .BuildServiceProvider();
         }
 
-        private static void Main() => RunAsync().Wait();
+        private static void Main()
+        {
+            Console.Title = "Client";
+            RunAsync().Wait();
+        }
     }
 }

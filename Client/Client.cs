@@ -30,11 +30,11 @@ namespace Netty.Examples.Client
 
         public event EventHandler<ReadIdleStateEventArgs> Timedout;
 
-        public event EventHandler<PacketEventArgs<Pong>> Ponged;
+        public event EventHandler<PacketEventArgs<Pong>> PingResponseReceived;
 
-        public event EventHandler<PacketEventArgs<Suback>> Subacked;
+        public event EventHandler<PacketEventArgs<Suback>> SubackReceived;
 
-        public async Task SubscribeAsync(int subjectId) => await _channel.WriteAsync(Subscribe.New(subjectId));
+        public async Task SubscribeAsync(int subjectId) => await _channel.WriteAsync(Subscribe.New(subjectId)).ConfigureAwait(false);
 
         public async Task RunAsync()
         {
@@ -44,7 +44,7 @@ namespace Netty.Examples.Client
             if(_channel == null || _channel.Active)
                 return;
 
-            await _channel.RunAsync();
+            await _channel.RunAsync().ConfigureAwait(false);
         }
 
         public async Task CloseAsync()
@@ -52,14 +52,14 @@ namespace Netty.Examples.Client
             if(_channel == null || !_channel.Active)
                 return;
 
-            await _channel.CloseAsync();
+            await _channel.CloseAsync().ConfigureAwait(false);
         }
 
         internal async void OnTimedout(ReadIdleStateEventArgs ev)
         {
             _logger.LogTrace("raise `Timedout` event");
             if(ev.MaxRetriesExceeded)
-                await CloseAsync();
+                await CloseAsync().ConfigureAwait(false);
 
             _ = ThreadPool.QueueUserWorkItem(s => Timedout?.Invoke(this, ev));
         }
@@ -79,13 +79,13 @@ namespace Netty.Examples.Client
         internal void OnPonged(Pong packet)
         {
             _logger.LogTrace("raise `Ponged` event");
-            _ = ThreadPool.QueueUserWorkItem(s => Ponged?.Invoke(this, new PacketEventArgs<Pong>(packet)));
+            _ = ThreadPool.QueueUserWorkItem(s => PingResponseReceived?.Invoke(this, new PacketEventArgs<Pong>(packet)));
         }
 
         internal void OnSubacked(Suback packet)
         {
             _logger.LogTrace("raise `Subacked` event");
-            _ = ThreadPool.QueueUserWorkItem(s => Subacked?.Invoke(this, new PacketEventArgs<Suback>(packet)));
+            _ = ThreadPool.QueueUserWorkItem(s => SubackReceived?.Invoke(this, new PacketEventArgs<Suback>(packet)));
         }
     }
 }

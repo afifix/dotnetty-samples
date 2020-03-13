@@ -28,7 +28,7 @@ namespace Netty.Examples.Common
             if(_channel == null || !_channel.Active || _closing || _connecting || _disposed)
                 return;
 
-            await _channel.WriteAndFlushAsync(packet);
+            await _channel.WriteAndFlushAsync(packet).ConfigureAwait(false);
         }
 
         public IChannelGroup NewChannelGroup()
@@ -39,8 +39,6 @@ namespace Netty.Examples.Common
             var executor = _channel.Pipeline.FirstContext().Executor;
             return new DefaultChannelGroup(executor);
         }
-
-#pragma warning disable CA1063 // Implement IDisposable Correctly
 
         public void Dispose()
         {
@@ -57,7 +55,7 @@ namespace Netty.Examples.Common
                 return;
 
             if(disposing)
-                await CloseAsync();
+                await CloseAsync().ConfigureAwait(false);
 
             _disposed = true;
         }
